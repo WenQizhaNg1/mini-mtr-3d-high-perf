@@ -1,0 +1,579 @@
+{
+  "id": "0fa15a06-e376-4b16-adec-3c6c3e749917",
+  "prevId": "2dc737e9-44ad-4a5f-8320-8f9bd47786d4",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "mtr.realtime_offsets": {
+      "name": "realtime_offsets",
+      "schema": "mtr",
+      "columns": {
+        "train_id": {
+          "name": "train_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "delay_seconds": {
+          "name": "delay_seconds",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "realtime_offsets_train_id_fkey": {
+          "name": "realtime_offsets_train_id_fkey",
+          "tableFrom": "realtime_offsets",
+          "tableTo": "train_runs",
+          "schemaTo": "mtr",
+          "columnsFrom": [
+            "train_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "mtr.route_patterns": {
+      "name": "route_patterns",
+      "schema": "mtr",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "osm_relation_id": {
+          "name": "osm_relation_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "line_id": {
+          "name": "line_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_code": {
+          "name": "from_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_code": {
+          "name": "to_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_name": {
+          "name": "from_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_name": {
+          "name": "to_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "via": {
+          "name": "via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "colour": {
+          "name": "colour",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "length_m": {
+          "name": "length_m",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stop_count": {
+          "name": "stop_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geom": {
+          "name": "geom",
+          "type": "geometry(LineString, 4326)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "route_patterns_geom_idx": {
+          "name": "route_patterns_geom_idx",
+          "columns": [
+            {
+              "expression": "geom",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        },
+        "route_patterns_line_id_idx": {
+          "name": "route_patterns_line_id_idx",
+          "columns": [
+            {
+              "expression": "line_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "route_patterns_osm_relation_id_key": {
+          "name": "route_patterns_osm_relation_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "osm_relation_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "mtr.route_stops": {
+      "name": "route_stops",
+      "schema": "mtr",
+      "columns": {
+        "pattern_id": {
+          "name": "pattern_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stop_sequence": {
+          "name": "stop_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "station_code": {
+          "name": "station_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "distance_m": {
+          "name": "distance_m",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fraction": {
+          "name": "fraction",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "route_stops_station_code_idx": {
+          "name": "route_stops_station_code_idx",
+          "columns": [
+            {
+              "expression": "station_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "route_stops_pattern_id_fkey": {
+          "name": "route_stops_pattern_id_fkey",
+          "tableFrom": "route_stops",
+          "tableTo": "route_patterns",
+          "schemaTo": "mtr",
+          "columnsFrom": [
+            "pattern_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "route_stops_station_code_fkey": {
+          "name": "route_stops_station_code_fkey",
+          "tableFrom": "route_stops",
+          "tableTo": "stations",
+          "schemaTo": "mtr",
+          "columnsFrom": [
+            "station_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "route_stops_pkey": {
+          "name": "route_stops_pkey",
+          "columns": [
+            "pattern_id",
+            "stop_sequence"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "route_stops_stop_sequence_check": {
+          "name": "route_stops_stop_sequence_check",
+          "value": "\"mtr\".\"route_stops\".\"stop_sequence\" >= 0"
+        },
+        "route_stops_distance_m_check": {
+          "name": "route_stops_distance_m_check",
+          "value": "\"mtr\".\"route_stops\".\"distance_m\" >= 0"
+        },
+        "route_stops_fraction_check": {
+          "name": "route_stops_fraction_check",
+          "value": "\"mtr\".\"route_stops\".\"fraction\" >= 0 AND \"mtr\".\"route_stops\".\"fraction\" <= 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "mtr.stations": {
+      "name": "stations",
+      "schema": "mtr",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_en": {
+          "name": "name_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_zh": {
+          "name": "name_zh",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "line_ids": {
+          "name": "line_ids",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "interchange": {
+          "name": "interchange",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geom": {
+          "name": "geom",
+          "type": "geometry(Point, 4326)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "stations_geom_idx": {
+          "name": "stations_geom_idx",
+          "columns": [
+            {
+              "expression": "geom",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "mtr.train_legs": {
+      "name": "train_legs",
+      "schema": "mtr",
+      "columns": {
+        "train_id": {
+          "name": "train_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_stop_sequence": {
+          "name": "from_stop_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_stop_sequence": {
+          "name": "to_stop_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "departure_at": {
+          "name": "departure_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrival_at": {
+          "name": "arrival_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "train_legs_window_idx": {
+          "name": "train_legs_window_idx",
+          "columns": [
+            {
+              "expression": "departure_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "arrival_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "train_legs_train_id_fkey": {
+          "name": "train_legs_train_id_fkey",
+          "tableFrom": "train_legs",
+          "tableTo": "train_runs",
+          "schemaTo": "mtr",
+          "columnsFrom": [
+            "train_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "train_legs_pkey": {
+          "name": "train_legs_pkey",
+          "columns": [
+            "train_id",
+            "sequence"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "train_legs_sequence_check": {
+          "name": "train_legs_sequence_check",
+          "value": "\"mtr\".\"train_legs\".\"sequence\" >= 0"
+        },
+        "train_legs_check": {
+          "name": "train_legs_check",
+          "value": "\"mtr\".\"train_legs\".\"to_stop_sequence\" > \"mtr\".\"train_legs\".\"from_stop_sequence\""
+        },
+        "train_legs_check1": {
+          "name": "train_legs_check1",
+          "value": "\"mtr\".\"train_legs\".\"arrival_at\" > \"mtr\".\"train_legs\".\"departure_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "mtr.train_runs": {
+      "name": "train_runs",
+      "schema": "mtr",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "service_date": {
+          "name": "service_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pattern_id": {
+          "name": "pattern_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "train_runs_service_date_idx": {
+          "name": "train_runs_service_date_idx",
+          "columns": [
+            {
+              "expression": "service_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "train_runs_window_idx": {
+          "name": "train_runs_window_idx",
+          "columns": [
+            {
+              "expression": "starts_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ends_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "train_runs_pattern_id_fkey": {
+          "name": "train_runs_pattern_id_fkey",
+          "tableFrom": "train_runs",
+          "tableTo": "route_patterns",
+          "schemaTo": "mtr",
+          "columnsFrom": [
+            "pattern_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "train_runs_check": {
+          "name": "train_runs_check",
+          "value": "\"mtr\".\"train_runs\".\"ends_at\" > \"mtr\".\"train_runs\".\"starts_at\""
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "mtr": "mtr"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

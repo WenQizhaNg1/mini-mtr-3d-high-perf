@@ -1,2 +1,14 @@
 dist
 node_modules
+.env
+test-results
+playwright-report
+
+map/*
+!map/martin.yaml
+!map/style/
+map/style/*
+!map/style/positron/
+!map/sprites/
+map/sprites/*
+!map/sprites/positron/

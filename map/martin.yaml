@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/maplibre/martin/main/schemas/config.json
+
+listen_addresses: 0.0.0.0:3000
+worker_processes: 2
+preferred_encoding: gzip
+web_ui: enable-for-all
+
+cache:
+  size_mb: 128
+  tile_size_mb: 96
+
+mbtiles:
+  sources:
+    osm:
+      path: /map/osm-latest.mbtiles
+
+postgres:
+  connection_string: ${MARTIN_DATABASE_URL}
+  pool_size: 4
+  auto_publish: false
+  tables:
+    mtr-routes:
+      schema: mtr
+      table: route_patterns
+      srid: 4326
+      geometry_column: geom
+      geometry_type: LINESTRING
+      id_column: osm_relation_id
+      layer_id: mtr_routes
+      properties:
+        id: text
+        line_id: text
+        from_code: text
+        to_code: text
+        colour: text
+        length_m: float8
+    mtr-stations:
+      schema: mtr
+      table: stations
+      srid: 4326
+      geometry_column: geom
+      geometry_type: POINT
+      layer_id: mtr_stations
+      properties:
+        code: text
+        name: text
+        name_en: text
+        name_zh: text
+        line_ids: text
+        interchange: bool
+
+fonts:
+  paths:
+    - /map/font
+  cache:
+    size_mb: 32
+
+sprites:
+  cache:
+    size_mb: 16
+  sources:
+    osm-liberty: /map/sprites/osm-liberty
+    positron: /map/sprites/positron
+
+styles:
+  rendering:
+    enabled: false
+  sources:
+    positron: /map/style/positron/style.json
+    osm-liberty-dark: /map/style/osm-liberty-dark/style.json

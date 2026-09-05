@@ -1,0 +1,57 @@
+name: mini-mtr-map
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mtr}
+      POSTGRES_USER: ${POSTGRES_USER:-mtr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - mini-mtr-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mtr} -d ${POSTGRES_DB:-mtr}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  martin:
+    image: ghcr.io/maplibre/martin:1.12.0
+    command: ["--config", "/map/martin.yaml"]
+    environment:
+      MARTIN_DATABASE_URL: postgresql://${POSTGRES_USER:-mtr}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-mtr}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${MARTIN_PORT:-8081}:3000"
+    volumes:
+      - ./map:/map:ro
+    restart: unless-stopped
+
+  train-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mtr}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-mtr}
+      REALTIME_ENABLED: ${REALTIME_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TRAIN_API_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  mini-mtr-postgres-data:

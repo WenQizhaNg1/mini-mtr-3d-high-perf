@@ -1,0 +1,648 @@
+/* ============================================================= */
+/* ============  字体 (复古未来主义)  ============ */
+/* ============================================================= */
+/* 站名宋体: 本地若装有正版「铁宋 MTR Sung」则优先, 否则回退开源昭源宋体 */
+@font-face {
+    font-family: 'Chiron Sung HK';
+    src: url('../../assets/fonts/ChironSungHK-M-subset.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+}
+/* 数字/时间: 点阵宋体·方点 (点状像素) */
+@font-face {
+    font-family: 'Dotted Songti Square';
+    src: url('../../assets/fonts/DottedSongtiSquare-subset.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+:root {
+    /* 铁宋风格宋体链 */
+    --font-serif-mtr: "MTR Sung", "鐵宋", "MTRSong", "Chiron Sung HK", "Noto Serif TC", "Songti HK", "PMingLiU", serif;
+    /* 黑体 */
+    --font-heiti: "Heiti SC", "Heiti TC", "STHeiti", "PingFang SC", "PingFang HK", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    /* 点状像素字体链 (数字) */
+    --font-dot: "Dotted Songti Square", "DotGothic16", "Courier New", monospace;
+    /* 霓虹辉光色 */
+    --neon-cyan: #7dd3fc;
+    --neon-amber: #fbbf24;
+}
+
+.ui-panel {
+    position: relative;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(125, 211, 252, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 24px rgba(56, 189, 248, 0.04);
+    border-radius: 12px;
+    color: #e2e8f0;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+/* 复古 CRT 扫描线覆盖层 (仅时序面板) */
+.clock-panel::after, .timeline-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(148, 197, 255, 0.028) 0px,
+        rgba(148, 197, 255, 0.028) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+}
+
+.ui-panel h3, .ui-panel h4 {
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.ui-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.ui-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.ui-button:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ui-button.primary {
+    background: #3b82f6; /* Blue */
+    border-color: #3b82f6;
+}
+.ui-button.primary:hover {
+    background: #2563eb;
+}
+
+.ui-button.danger {
+    background: rgba(239, 68, 68, 0.2); /* Red tint */
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.ui-button.danger:hover {
+    background: rgba(239, 68, 68, 0.4);
+}
+
+.ui-button.success {
+    background: rgba(34, 197, 94, 0.2); /* Green tint */
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.ui-button.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.about-toggle {
+    position: absolute;
+    right: 20px;
+    bottom: 76px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 11px;
+    font-family: var(--font-heiti);
+    font-weight: 700;
+    letter-spacing: 1px;
+    z-index: 1000;
+}
+
+.about-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(2, 6, 23, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.about-card {
+    position: relative;
+    width: min(440px, calc(100vw - 48px));
+    max-height: min(80vh, 560px);
+    overflow-y: auto;
+    padding: 22px 24px 20px;
+}
+
+.about-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.about-close:hover {
+    color: #fff;
+}
+
+.about-title {
+    font-family: var(--font-heiti);
+    font-size: 20px;
+    margin: 0 28px 6px 0;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.about-byline {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-family: var(--font-heiti);
+}
+
+.about-contact {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-family: var(--font-heiti);
+}
+
+.about-byline a,
+.about-contact a,
+.about-body a {
+    color: #7dd3fc;
+    text-decoration: none;
+}
+
+.about-byline a:hover,
+.about-contact a:hover,
+.about-body a:hover {
+    text-decoration: underline;
+}
+
+.about-body p {
+    margin: 0 0 12px;
+    font-family: var(--font-heiti);
+    font-size: 14px;
+    line-height: 1.75;
+    color: #e2e8f0;
+}
+
+.about-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* --- 左上角: 时钟 + 天气 --- */
+.clock-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    min-width: 240px;
+    z-index: 1000;
+    padding: 14px 18px;
+}
+
+.clock-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.live-badge {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+.live-badge.replay {
+    background: #94a3b8;
+    box-shadow: none;
+    animation: none;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.live-label {
+    font-family: var(--font-serif-mtr);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #86efac;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.45);
+}
+
+.tz-label {
+    margin-left: auto;
+    font-family: var(--font-serif-mtr);
+    font-size: 11px;
+    color: #64748b;
+    letter-spacing: 1px;
+}
+
+.clock-time {
+    font-family: var(--font-dot);
+    font-size: 36px;
+    font-weight: 400;
+    color: #f8fafc;
+    text-shadow: 0 0 6px rgba(125, 211, 252, 0.55), 0 0 18px rgba(56, 189, 248, 0.35);
+    letter-spacing: 3px;
+    line-height: 1.15;
+}
+
+.clock-date {
+    font-family: var(--font-serif-mtr);
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 2px 0 10px;
+    letter-spacing: 0.5px;
+}
+
+.weather-row {
+    font-family: var(--font-serif-mtr);
+    font-size: 15px;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 22px;
+}
+
+.weather-warnings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.warn-chip {
+    font-family: var(--font-serif-mtr);
+    font-size: 11px;
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+
+.api-status {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+    color: #4ade80;
+}
+.api-status.offline {
+    color: #f87171;
+}
+
+/* --- 底部居中: 全天时间轴 --- */
+.timeline-panel {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(760px, calc(100vw - 48px));
+    z-index: 1000;
+    padding: 12px 18px 8px;
+}
+
+.tl-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.tl-btn {
+    padding: 5px 12px;
+    font-size: 13px;
+    min-width: 52px;
+}
+
+.live-btn.on-live {
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+    pointer-events: none;
+}
+
+.speed-btn {
+    font-family: var(--font-dot);
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
+.power-btn.active {
+    color: #fde68a;
+    border-color: rgba(251, 191, 36, 0.4);
+    background: rgba(245, 158, 11, 0.16);
+}
+
+/* 滑轨 */
+.tl-draggable {
+    padding: 10px 0 4px;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.tl-track {
+    position: relative;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.tl-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #2563eb, #60a5fa);
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.55);
+    pointer-events: none;
+}
+
+.tl-tick {
+    position: absolute;
+    top: -2px;
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+}
+
+.tl-handle {
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #3b82f6;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+    pointer-events: none;
+    transition: box-shadow 0.2s;
+}
+
+.tl-bubble {
+    position: absolute;
+    top: -34px;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-family: var(--font-dot);
+    font-size: 13px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.tl-labels {
+    position: relative;
+    height: 16px;
+    margin-top: 2px;
+}
+
+.tl-tick-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #64748b;
+    font-family: var(--font-dot);
+    letter-spacing: 1px;
+}
+
+/* 点击展开的详情卡 */
+.alert-card {
+    display: none;
+    margin-top: 8px;
+    width: 260px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: left;
+    cursor: default;
+}
+
+.alert-bubble.expanded .alert-card {
+    display: block;
+}
+
+.alert-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.alert-card-msg {
+    font-size: 12px;
+    line-height: 1.55;
+    color: #fde68a;
+    margin-bottom: 8px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.alert-card-time {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.alert-card-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #60a5fa;
+    text-decoration: none;
+}
+.alert-card-link:hover {
+    text-decoration: underline;
+}
+
+/* --- 选中列车信息框 --- */
+.train-popup {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 6px));
+    pointer-events: none;
+    z-index: 950;
+    display: flex;
+    background: rgba(0, 0, 0, 0.78);
+    border-radius: 4px;
+    overflow: hidden;
+    color: #fff;
+    font-family: var(--font-serif-mtr);
+    white-space: nowrap;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.train-popup-bar {
+    width: 5px;
+    background: var(--line-color, #00ccff);
+    flex-shrink: 0;
+}
+
+.train-popup-body {
+    padding: 8px 12px 8px 10px;
+}
+
+.train-popup-line {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.train-popup-dir {
+    font-size: 12px;
+    color: #f8fafc;
+    margin-bottom: 6px;
+}
+
+.train-popup-stop {
+    font-size: 12px;
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+/* --- 站点悬停提示 --- */
+.station-popup {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 10px));
+    pointer-events: none;
+    z-index: 960;
+    min-width: 140px;
+    background: rgba(0, 0, 0, 0.78);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-family: var(--font-serif-mtr);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.station-popup-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.station-popup-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.station-popup-line-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #f3f4f6;
+}
+
+.station-popup-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* Vue shell and controls added during migration. Original panel metrics above are preserved. */
+html, body, #app, .map-shell, .map { width: 100%; height: 100%; margin: 0; }
+body { overflow: hidden; background: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.map-shell { position: relative; }
+button, input { font: inherit; }
+button:disabled, input:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+.clock-panel { max-width: 340px; max-height: calc(100% - 190px); overflow-y: auto; }
+.clock-panel p { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.weather-row { white-space: pre-wrap; }
+.muted { color: #94a3b8; }
+.warning { color: #fde68a; }
+.operations-details { font-size: 11px; color: #94a3b8; }
+.operations-details > summary { list-style: none; }
+.operations-details > summary::-webkit-details-marker { display: none; }
+.operations-details > summary:focus-visible { border-radius: 2px; }
+summary { cursor: pointer; }
+.operations-details .alert-card { display: block; width: auto; margin-top: 12px; }
+.tl-controls { position: relative; }
+.tl-btn { font-family: inherit; flex-shrink: 0; }
+.speed-btn { font-family: var(--font-dot); }
+.tl-date-picker { margin-left: auto; }
+.tl-date-picker summary { padding: 3px 9px; list-style: none; }
+.tl-date-picker summary::-webkit-details-marker { display: none; }
+.tl-date-picker label { position: absolute; right: 0; bottom: calc(100% + 20px); display: grid; gap: 8px; font-size: 12px; }
+.tl-date-picker input { color-scheme: dark; color: #e2e8f0; background: #1e293b; border: 1px solid #64748b; border-radius: 4px; padding: 6px; }
+.tl-loading { position: absolute; right: 0; top: -16px; font-family: var(--font-dot); font-size: 12px; }
+.tl-draggable { position: relative; }
+.tl-range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.tl-draggable.dragging .tl-bubble, .tl-draggable:focus-within .tl-bubble { opacity: 1; }
+.tl-draggable:focus-within .tl-handle { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+.selection { pointer-events: auto; max-width: calc(100vw - 48px); }
+.train-extra { margin-top: 5px; color: #94a3b8; font: 10px/1.5 var(--font-heiti); white-space: normal; }
+.train-extra summary { font-size: 10px; }
+.train-extra small { overflow-wrap: anywhere; }
+.popup-close { position: absolute; right: 3px; top: 1px; border: 0; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; }
+.station-popup-name, .train-popup-line { padding-right: 10px; }
+.about-overlay { box-sizing: border-box; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; }
+.about-overlay::backdrop { background: transparent; }
+@media (max-width: 900px) {
+    .timeline-panel { width: calc(100vw - 150px); }
+}
+@media (max-width: 600px) {
+    .clock-panel { top: 12px; left: 12px; min-width: 220px; max-width: calc(100vw - 105px); padding: 12px 14px; max-height: 42%; }
+    .clock-time { font-size: 32px; }
+    .clock-top { gap: 6px; }
+    .tz-label { font-size: 10px; }
+    .timeline-panel { box-sizing: border-box; width: calc(100vw - 24px); bottom: 32px; padding: 12px 12px 8px; }
+    .tl-controls { gap: 5px; flex-wrap: wrap; }
+    .tl-btn { min-width: 36px; padding: 5px 8px; font-size: 12px; }
+    .tl-tick-label { font-size: 9px; letter-spacing: 0; }
+    .about-toggle { right: 12px; bottom: 144px; }
+    .about-card { box-sizing: border-box; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .live-badge { animation: none; }
+    .ui-panel, .ui-button { transition: none; }
+}

@@ -1,48 +1,31 @@
-# mini mtr
+# Mini MTR
 
-<img width="1920" height="929" alt="image" src="https://github.com/user-attachments/assets/92f86b94-6241-4ce6-85f3-710dea2a2c6a" />
-
-A miniature **3D real-time visualization of the Hong Kong MTR network**, inspired by [Mini Tokyo 3D](https://minitokyo3d.com/).
+Hong Kong MTR visualization with Vue 3, MapLibre, Hono and PostGIS. Inspired by [Mini Tokyo 3D](https://minitokyo3d.com/); original project by [7gugu](https://github.com/7gugu/mini-mtr-3d).
 
 [中文说明](./README_zh.md)
 
-![tech](https://img.shields.io/badge/Three.js-0.160-blue) ![tech](https://img.shields.io/badge/AMap-JS%20API%202.0-green) ![tech](https://img.shields.io/badge/TypeScript-5.7-blue) [![Build & Deploy to GitHub Pages](https://github.com/7gugu/mini-mtr-3d/actions/workflows/webpack.yml/badge.svg)](https://github.com/7gugu/mini-mtr-3d/actions/workflows/webpack.yml)
+- OSM basemap and MTR route/station vector tiles from Martin.
+- Shared live train snapshots, server-side position calculation and stateless replay.
+- Hong Kong timeline, pause, seek and 1–60× playback.
+- Train/station details, current incidents, weather, bilingual UI and power save.
 
-## Features
+Positions are estimates based on generated schedules and live arrival corrections, not onboard GPS. Replay does not provide historical weather or incident records.
 
-### 3D trains + map
-- Rendered with **AMap GLCustomLayer + Three.js**, MeshLine glowing tracks, covering 10 MTR lines (including Tseung Kwan O LOHAS Park branch and East Rail Lok Ma Chau branch)
-- Deterministic all-day timetable from real service windows (05:30 → next day 01:30) with peak / daytime / evening / late headways (~4000+ trips), line colors, and platform dwells
-- Fleet object pool: only on-map trains are rendered each frame (~30–400), with full-day scrubbing
+## Development
 
-### Live MTR data (data.gov.hk)
-- Polls the [MTR Next Train API](https://data.gov.hk/en-data/dataset/mtr-data2-nexttrain-data) every 30s (one monitor station per line)
-- Greedy matching of live arrivals to the planned timetable by destination, then smooth offset correction
-- Line incidents (`status=0` / `isdelay=Y`) only in live mode; timeline replay disconnects and reconnects automatically
+Use Node 24 and npm:
 
-### Incident bubbles
-- Pulsing ⚠ bubbles above mid-line anchors (line-colored tags); click for official text, update time, and special-service links
-
-### UI
-- **Top-left**: Hong Kong simulation time, date, HKO weather, warnings, and API health
-- **Bottom center**: full-day scrubber (05:30 → 01:30), play/pause, 1×–60× speed, “Go live”
-- Station labels by zoom (major / interchange at low zoom)
-- Bottom-right tools: About, track/schedule editor, power-save mode
-- **zh / en** UI with browser-language auto-detect (override in the UI)
-
-## Develop
-
-```bash
-npm install
-npm start        # webpack dev server
-npm test         # jest
-npm run build    # production build (use build:prod for Pages)
+```sh
+npm ci
+npm run front:install
+npm run server:install
+npm start
+npm run build
+npm test
 ```
 
-- AMap key / security code via env: `AMAP_KEY` / `AMAP_SECURITY_CODE` (empty string fallback)
-- Line/station data: `src/hk_mtr_data.ts`; coordinates & names from `scripts/fetch-mtr-stations.mjs` → `src/mtr/stations.generated.ts`
-- Live API: `src/mtr/api.ts`; polling & offsets: `src/mtr/RealtimeManager.ts`
+Initialize the local PostGIS, Martin and API stack using [backend setup](./docs/train-position-backend.md). Frontend: http://127.0.0.1:8080. Copy front/.env.example to front/.env if the service URLs differ. Build output is front/dist; a hosted frontend requires accessible Martin/API URLs at build time.
 
-## Live demo
+[Architecture](./docs/architecture.md) · [Migration plan](./docs/server-refactor-plan.md) · [Frontend functionality and checks](./docs/frontend-migration.md)
 
-https://7gugu.github.io/mini-mtr-3d/
+The old AMap/Three.js application and its build chain have been removed. Git history retains the original code. The editor is deferred; map and train visual redesign remains future work.

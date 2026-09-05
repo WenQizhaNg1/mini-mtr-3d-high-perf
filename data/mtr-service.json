@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "serviceDayStart": "05:30:00+08:00",
+  "serviceEndOffsetMinutes": 1110,
+  "dwellSeconds": 30,
+  "travelTimeFactor": 1.35,
+  "lines": [
+    {
+      "lineId": "ISL",
+      "apiCode": "ISL",
+      "monitorStation": "QUB",
+      "nameEn": "Island Line",
+      "nameZh": "港島綫",
+      "colour": "#007dc5",
+      "incidentAnchorStation": "QUB",
+      "speedKmph": 70,
+      "firstTrainOffsetMinutes": 10,
+      "lastTrainOffsetMinutes": 1180,
+      "headways": { "peak": 3, "normal": 5, "evening": 6, "late": 9 },
+      "patterns": {
+        "UP": { "default": "ISL:KET-CHW" },
+        "DOWN": { "default": "ISL:CHW-KET" }
+      }
+    },
+    {
+      "lineId": "TWL",
+      "apiCode": "TWL",
+      "monitorStation": "MOK",
+      "nameEn": "Tsuen Wan Line",
+      "nameZh": "荃灣綫",
+      "colour": "#ed1d24",
+      "incidentAnchorStation": "MOK",
+      "speedKmph": 70,
+      "firstTrainOffsetMinutes": 5,
+      "lastTrainOffsetMinutes": 1185,
+      "headways": { "peak": 3, "normal": 5, "evening": 6, "late": 9 },
+      "patterns": {
+        "UP": { "default": "TWL:CEN-TSW" },
+        "DOWN": { "default": "TWL:TSW-CEN" }
+      }
+    },
+    {
+      "lineId": "KTL",
+      "apiCode": "KTL",
+      "monitorStation": "CHH",
+      "nameEn": "Kwun Tong Line",
+      "nameZh": "觀塘綫",
+      "colour": "#00ab4e",
+      "incidentAnchorStation": "CHH",
+      "speedKmph": 70,
+      "firstTrainOffsetMinutes": 5,
+      "lastTrainOffsetMinutes": 1195,
+      "headways": { "peak": 3, "normal": 5, "evening": 6, "late": 9 },
+      "patterns": {
+        "UP": { "default": "KTL:WHA-TIK" },
+        "DOWN": { "default": "KTL:TIK-WHA" }
+      }
+    },
+    {
+      "lineId": "TKL",
+      "apiCode": "TKL",
+      "monitorStation": "TKO",
+      "nameEn": "Tseung Kwan O Line",
+      "nameZh": "將軍澳綫",
+      "colour": "#7d499d",
+      "incidentAnchorStation": "TKO",
+      "speedKmph": 80,
+      "firstTrainOffsetMinutes": 30,
+      "lastTrainOffsetMinutes": 1205,
+      "headways": { "peak": 4, "normal": 6, "evening": 7, "late": 10 },
+      "patterns": {
+        "UP": { "default": "TKL:NOP-POA", "alternate": "TKL:NOP-LHP", "every": 3 },
+        "DOWN": { "default": "TKL:POA-NOP", "alternate": "TKL:LHP-NOP", "every": 3 }
+      }
+    },
+    {
+      "lineId": "EAL",
+      "apiCode": "EAL",
+      "monitorStation": "TAW",
+      "nameEn": "East Rail Line",
+      "nameZh": "東鐵綫",
+      "colour": "#53b7e8",
+      "incidentAnchorStation": "TAW",
+      "speedKmph": 110,
+      "firstTrainOffsetMinutes": 5,
+      "lastTrainOffsetMinutes": 1180,
+      "headways": { "peak": 5, "normal": 7, "evening": 8, "late": 12 },
+      "patterns": {
+        "UP": { "default": "EAL:ADM-LOW", "alternate": "EAL:ADM-LMC", "every": 4 },
+        "DOWN": { "default": "EAL:LOW-ADM", "alternate": "EAL:LMC-ADM", "every": 4 }
+      }
+    },
+    {
+      "lineId": "TML",
+      "apiCode": "TML",
+      "monitorStation": "HUH",
+      "nameEn": "Tuen Ma Line",
+      "nameZh": "屯馬綫",
+      "colour": "#923011",
+      "incidentAnchorStation": "HUH",
+      "speedKmph": 100,
+      "firstTrainOffsetMinutes": 0,
+      "lastTrainOffsetMinutes": 1180,
+      "headways": { "peak": 5, "normal": 7, "evening": 8, "late": 12 },
+      "patterns": {
+        "UP": { "default": "TML:WKS-TUM" },
+        "DOWN": { "default": "TML:TUM-WKS" }
+      }
+    },
+    {
+      "lineId": "TCL",
+      "apiCode": "TCL",
+      "monitorStation": "TSY",
+      "nameEn": "Tung Chung Line",
+      "nameZh": "東涌綫",
+      "colour": "#f7943e",
+      "incidentAnchorStation": "TSY",
+      "speedKmph": 120,
+      "firstTrainOffsetMinutes": 25,
+      "lastTrainOffsetMinutes": 1155,
+      "headways": { "peak": 7, "normal": 9, "evening": 10, "late": 12 },
+      "patterns": {
+        "UP": { "default": "TCL:HOK-TUC" },
+        "DOWN": { "default": "TCL:TUC-HOK" }
+      }
+    },
+    {
+      "lineId": "AEL",
+      "apiCode": "AEL",
+      "monitorStation": "AIR",
+      "nameEn": "Airport Express",
+      "nameZh": "機場快綫",
+      "colour": "#00888a",
+      "incidentAnchorStation": "AIR",
+      "speedKmph": 130,
+      "firstTrainOffsetMinutes": 25,
+      "lastTrainOffsetMinutes": 1155,
+      "headways": { "peak": 10, "normal": 10, "evening": 12, "late": 15 },
+      "patterns": {
+        "UP": { "default": "AEL:HOK-AWE" },
+        "DOWN": { "default": "AEL:AWE-HOK" }
+      }
+    },
+    {
+      "lineId": "DRL",
+      "apiCode": "DRL",
+      "monitorStation": "DIS",
+      "nameEn": "Disneyland Resort Line",
+      "nameZh": "迪士尼綫",
+      "colour": "#f173ac",
+      "incidentAnchorStation": "DIS",
+      "speedKmph": 60,
+      "firstTrainOffsetMinutes": 45,
+      "lastTrainOffsetMinutes": 1155,
+      "headways": { "peak": 10, "normal": 10, "evening": 10, "late": 10 },
+      "patterns": {
+        "UP": { "default": "DRL:DIS-SUN" },
+        "DOWN": { "default": "DRL:SUN-DIS" }
+      }
+    },
+    {
+      "lineId": "SIL",
+      "apiCode": "SIL",
+      "monitorStation": "OCP",
+      "nameEn": "South Island Line",
+      "nameZh": "南港島綫",
+      "colour": "#b6bd00",
+      "incidentAnchorStation": "OCP",
+      "speedKmph": 80,
+      "firstTrainOffsetMinutes": 30,
+      "lastTrainOffsetMinutes": 1150,
+      "headways": { "peak": 4, "normal": 6, "evening": 7, "late": 10 },
+      "patterns": {
+        "UP": { "default": "SIL:ADM-SOH" },
+        "DOWN": { "default": "SIL:SOH-ADM" }
+      }
+    }
+  ]
+}

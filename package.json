@@ -1,46 +1,34 @@
 {
   "name": "mini-greater-bay-area-3d",
   "version": "1.0.0",
-  "description": "Miniature 3D real-time visualization of the Hong Kong MTR",
-  "main": "index.js",
+  "description": "Hong Kong MTR visualization with Vue, MapLibre and PostGIS",
   "scripts": {
-    "test": "jest --no-cache",
-    "build": "webpack --config webpack.config.js",
-    "build:prod": "webpack --config webpack.config.js --mode production",
-    "start": "webpack serve --open"
+    "data:osm:build": "node scripts/build-osm-mtr.mjs",
+    "data:osm:import": "npm --prefix server run data:osm:import --",
+    "data:osm:test-positions": "node scripts/test-train-positions.mjs",
+    "data:mtr:schedule": "npm --prefix server run data:mtr:schedule --",
+    "db:migrate": "npm --prefix server run db:migrate",
+    "db:baseline": "npm --prefix server run db:baseline --",
+    "server:install": "npm --prefix server install",
+    "server:build": "npm --prefix server run build",
+    "server:typecheck": "npm --prefix server run typecheck",
+    "server": "npm --prefix server run dev",
+    "front:install": "npm --prefix front install",
+    "start": "npm --prefix front run dev",
+    "build": "npm --prefix front run build",
+    "test:server": "npm --prefix server test",
+    "test": "npm --prefix front test && npm --prefix server test",
+    "build:prod": "npm --prefix front run build",
+    "test:front": "npm --prefix front test",
+    "test:browser": "npm --prefix front run test:browser"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@jest/test-sequencer": "30.2.0",
-    "@types/jest": "^29.5.14",
-    "@types/minimatch": "^5.1.2",
-    "@types/node": "^22.10.1",
-    "@types/three": "^0.181.0",
-    "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^12.0.2",
-    "css-loader": "^7.1.2",
-    "dotenv": "^16.4.7",
-    "html-webpack-plugin": "^5.6.3",
-    "jest": "^29.7.0",
-    "jest-cli": "30.2.0",
-    "jest-config": "30.2.0",
-    "jest-environment-jsdom": "30.2.0",
-    "jest-environment-node": "30.2.0",
-    "jest-runner": "30.2.0",
-    "jest-runtime": "30.2.0",
-    "style-loader": "^4.0.0",
-    "ts-jest": "^29.4.6",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.7.2",
-    "webpack": "^5.97.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.2.2"
+    "fast-xml-parser": "^5.11.1"
   },
   "dependencies": {
-    "@amap/amap-jsapi-loader": "^1.0.1",
-    "three": "0.160.0",
-    "three.meshline": "^1.4.0"
+    "pg": "^8.23.0"
   }
 }
