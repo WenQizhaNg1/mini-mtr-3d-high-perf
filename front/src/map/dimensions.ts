@@ -1,15 +1,9 @@
-import type { ExpressionSpecification } from 'maplibre-gl';
-
-// Shared by line paint and train polygons, in pixels at zero pitch.
+// Train geometry baseline, in pixels at zero pitch. Layer paint now lives in app.layer;
+// changing its line-width does not change vehicle geometry.
 const ROUTE_WIDTHS = [[0, 10 / 128], [11, 10 / Math.sqrt(8)], [14, 14], [18, 64], [22, 256]] as const;
 export const ROUTE_CASING_RATIO = 1.15;
 export const TRAIN_WIDTH_RATIO = ROUTE_CASING_RATIO * 1.5;
 const BASE = Math.SQRT2;
-
-export function routeWidthExpression(ratio = 1): ExpressionSpecification {
-    return ['interpolate', ['exponential', BASE], ['zoom'],
-        ...ROUTE_WIDTHS.flatMap(([zoom, width]) => [zoom, width * ratio])] as ExpressionSpecification;
-}
 
 export function routeWidthAtZoom(zoom: number): number {
     if (zoom <= ROUTE_WIDTHS[0][0]) return ROUTE_WIDTHS[0][1];

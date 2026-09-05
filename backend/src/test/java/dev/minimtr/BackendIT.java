@@ -31,7 +31,7 @@ class BackendIT {
     void startsWithPostgisJooqFlywayAndHttp() throws Exception {
         assertEquals(1, db.selectOne().fetchSingle().value1());
         assertTrue(db.fetchOne("select exists (select 1 from pg_catalog.pg_extension where extname = 'postgis')").get(0, Boolean.class));
-        assertEquals("5", flyway.info().current().getVersion().getVersion());
+        assertEquals("7", flyway.info().current().getVersion().getVersion());
         assertEquals("backend_meta", flyway.getConfiguration().getDefaultSchema());
 
         try (var client = HttpClient.newHttpClient()) {

@@ -1,4 +1,4 @@
-import { addMtrLayers, TRAIN_SOURCE_ID, TRAIN_COLOUR } from './layers';
+import { addMtrLayers, TRAIN_SOURCE_ID } from './layers';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {
     GeoJSONSource,
@@ -10,6 +10,7 @@ import {
 } from 'maplibre-gl';
 import type { LngLatBoundsLike } from 'maplibre-gl';
 import type { TrainPosition, TrainSnapshot } from '../api/types';
+import type { MapStyle } from '../api/styles';
 import { trainFeatures } from './trainGeometry';
 import { mergeMotion, sampleMotion } from './trainMotion';
 
@@ -110,12 +111,11 @@ function createTrainRenderer(map: MapLibreMap) {
     };
 }
 
-export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): MtrMap {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const styleName = prefersDark ? 'osm-liberty-dark' : 'positron';
+export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, style: MapStyle): MtrMap {
+    if (!['positron', 'osm-liberty-dark'].includes(style.basemap)) throw new Error(`Unknown basemap: ${style.basemap}`);
     const map = new MapLibreMap({
         container,
-        style: `${MARTIN_URL}/style/${styleName}`,
+        style: `${MARTIN_URL}/style/${style.basemap}`,
         center: [114.11, 22.36],
         zoom: 10.3,
         pitch: 42,
@@ -128,11 +128,11 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): M
     let selected: string | null = null;
     let stationAnchor: [number, number] | null = null;
     const updateLanguage = () => {
-        if (map.getLayer('mtr-station-labels')) map.setLayoutProperty('mtr-station-labels', 'text-field', ['get', language === 'zh' ? 'name_zh' : 'name_en']);
+        if (map.getSource(TRAIN_SOURCE_ID)) map.setGlobalStateProperty('language', language);
     };
     const updateSelection = () => {
-        if (map.getLayer('mtr-trains')) map.setPaintProperty('mtr-trains', 'fill-extrusion-color',
-            ['case', ['==', ['get', 'id'], selected || ''], '#facc15', TRAIN_COLOUR]);
+        if (selected && map.getSource(TRAIN_SOURCE_ID))
+            map.setFeatureState({ source: TRAIN_SOURCE_ID, id: selected }, { selected: true });
     };
 
     Object.assign(window, {
@@ -146,7 +146,10 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): M
     map.addControl(new ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
 
     map.on('load', () => {
-        addMtrLayers(map, prefersDark, MARTIN_URL);
+        try { addMtrLayers(map, style.layers, MARTIN_URL); }
+        catch (cause) { callbacks.onError(`Map layers: ${String(cause)}`); return; }
+        if (style.basemap === 'osm-liberty-dark')
+            map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.4, position: [1.5, 210, 40] });
         updateLanguage();
         updateSelection();
         if (!window.location.hash) {
@@ -154,11 +157,13 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): M
         }
 
         for (const layer of ['mtr-stations', 'mtr-trains']) {
+            if (!map.getLayer(layer)) continue;
             map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
             map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
         }
         map.on('click', event => {
-            const features = map.queryRenderedFeatures(event.point, { layers: ['mtr-trains', 'mtr-stations'] });
+            const layers = ['mtr-trains', 'mtr-stations'].filter(id => map.getLayer(id));
+            const features = layers.length ? map.queryRenderedFeatures(event.point, { layers }) : [];
             const train = features.find(feature => feature.layer.id === 'mtr-trains');
             const station = features.find(feature => feature.layer.id === 'mtr-stations');
             stationAnchor = station?.geometry.type === 'Point' ? station.geometry.coordinates.slice(0, 2) as [number, number] : null;
@@ -179,7 +184,12 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): M
         setSnapshot: renderer.setSnapshot,
         setPowerSave: renderer.setPowerSave,
         setLanguage(value) { language = value; updateLanguage(); },
-        selectTrain(id) { selected = id; updateSelection(); },
+        selectTrain(id) {
+            if (selected && map.getSource(TRAIN_SOURCE_ID))
+                map.removeFeatureState({ source: TRAIN_SOURCE_ID, id: selected }, 'selected');
+            selected = id;
+            updateSelection();
+        },
         destroy() {
             renderer.stop();
             delete (window as Window & { __mtrDebug?: unknown }).__mtrDebug;

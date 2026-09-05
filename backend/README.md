@@ -77,6 +77,12 @@ java -jar backend/target/backend-0.1.0-SNAPSHOT.jar --spring.main.web-applicatio
 - `GET /api/trains/live`：SSE，每秒推送快照，包含未来最多 3 秒的带时间戳路径拐点。
 - `GET /api/operations`：实时轮询状态和线路运营提示。
 - `GET /api/weather?lang=zh`：当前天文台天气，支持 zh/en，默认 zh。分语言缓存 10 分钟；刷新失败保留旧值、标记 stale，1 分钟后重试；没有旧值时返回 503。上游请求超时 10 秒。
+- `GET /api/styles`：数据库样式方案列表（code/name/basemap）。
+- `GET /api/styles/{code}`：方案及按 position 排序的 MapLibre 原生业务图层；不存在返回 404，不使用硬编码回退。读取不缓存，刷新首页会重新查询。
+
+V6 将日间 `mtr-light` 和夜间 `mtr-dark` 的各 5 个业务图层初始化到 `app.style` / `app.layer`。响应将 source_layer 映射为 `source-layer`，enabled=false 映射为 layout.visibility=none，保留 paint/layout/filter 的原生 JSON 类型。底图仍由 basemap 引用 Martin 的现有样式文件，未开放底图编辑或样式写接口。
+
+首页按系统明暗偏好读取对应方案。数据源由前端注册；线路线层位于底图第一个建筑挤出层之前，其余业务层位于底图之上，各组内沿用数据库顺序。语言通过 global-state.language 传入表达式，车辆选中通过 feature-state.selected 表达式显示，不覆盖已保存的基础样式。车辆宽长仍由前端几何参数生成，修改数据库 line-width 不会同步改变车辆尺寸。
 
 当前 API 保持 MTR 兼容范围，尚未开放多运营方查询。计划回放不混入实时延误，`delaySeconds` 为 0。实时结果带 `estimate`（planned / observed / predicted / stale / conflict）和 `motion`；它是基于到站信息的推演，并非列车 GPS 定位。前端响应类型定义在 `front/src/api/types.ts`，不再引用旧 Node 源码；公开只读 API 支持跨域 GET（不携带凭据），后续编辑接口需要独立的授权与跨域策略。
 
@@ -112,7 +118,22 @@ OUTBOUND_PROXY_URL=http://127.0.0.1:1083
 
 然后重启 `npm run server`。留空或删除该项即可恢复直连。仅支持无认证的 HTTP 代理（HTTPS 上游通过 CONNECT 隧道访问）；格式必须为 `http://host:port`，不支持 SOCKS。配置仅作用于 Java 的港铁/天气请求，不修改系统代理，不影响数据库、Martin 或浏览器。代理不可用时保留请求错误，不自动绕过代理；默认直连也不读取 JVM 全局代理参数。
 
-## 验证
+## 数据集与完整地图样式
+
+设计及请求格式见 [数据发布设计](../docs/dataset-publishing.md)。V7 新增 dataset/feature 和参数化 MVT 函数，不改现有交通表。
+
+首次更新顺序：启动后端让 Flyway 建表和函数，再执行 `docker compose restart martin`。此后新增/发布数据集无需重启 Martin。配置 `.env` 的 `WORKBENCH_TOKEN` 后，管理请求携带 `Authorization: Bearer <token>`；留空则禁用。请求为 JSON（需要 Content-Length），不是 multipart 文件上传。
+
+- `GET /api/ontology`：语义类别。
+- `GET /api/datasets`、`GET /api/datasets/{code}`：已发布数据集；管理端 `GET /api/admin/datasets` 包括草稿。
+- `POST /api/datasets/preview`、`POST /api/datasets`：预览/创建 GeoJSON、CSV、WKT 数据集。
+- `PUT /api/datasets/{code}/publication`：发布状态。
+- `PUT /api/styles/{code}`：保存业务样式，保留原生 paint/layout/filter。
+- `GET /api/styles/{code}/style.json`：完整 MapLibre 样式，含 sources、layers、字体和精灵资源。
+
+`MARTIN_PUBLIC_URL` 默认 http://127.0.0.1:8081，必须能从浏览器访问。受控底图模板默认读取仓库 map/；独立运行 jar 时建议明确设置 `MAP_DIRECTORY`。现有首页仍读旧样式接口；自定义数据源在下一轮前端迁移后接入首页。
+
+## 验证命令
 
 根目录 `npm test` 运行前端与 Java 单元测试；`npm run server:build` 构建 Java。旧位置 SQL 已作为只读对照样本移到 `src/test/resources/legacy/`，测试构建不再引用 `server/`。
 

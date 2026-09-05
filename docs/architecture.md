@@ -26,7 +26,7 @@
 - `stores/transit.ts`：Pinia 路网、天气、运营资料及各自加载/错误状态；大对象使用 shallowRef。
 - `composables/`：播放会话、资料轮询和共用显示格式。SSE、AbortController 和定时器归页面生命周期所有，不进入全局 Store。
 - `api/`：HTTP 客户端、交通接口和响应类型。
-- `map/`：MapLibre 实例、原生图层与列车几何/插值；不依赖 Pinia。
+- `map/`：MapLibre 实例、数据源注册、图层插入及列车几何/插值；不依赖 Pinia。业务图层样式从 Java API 读取，不在前端定义。
 - `styles/`：基础字体/变量及面板样式，保留现有视觉。
 
 首页不使用 KeepAlive。离开页面时关闭 SSE、取消请求与定时器、停止动画并销毁地图；返回时重新进入实时模式。语言与省电偏好保留，选中项和回放位置重置。
@@ -36,9 +36,12 @@
 ## 数据与接口
 
 - 业务表位于 `app`，Flyway 元数据位于 `backend_meta`。
-- Martin 通过 `app.map_routes` 和 `app.map_stations` 视图发布线路、站点瓦片，底图来自本地 OSM MBTiles。
+- Martin 通过 `app.map_routes` 和 `app.map_stations` 视图发布线路、站点瓦片，底图来自本地 OSM MBTiles。通用数据集通过 `app.dataset_tile` 函数源发布，数据存于 dataset/feature/spatial_object。
 - Java 默认监听 3002，提供路网、服务日、列车快照/SSE、运营状态及天气接口。
+- `app.style` / `app.layer` 保存业务图层配置。`GET /api/styles` 返回方案列表，`GET /api/styles/{code}` 返回原生图层。首页依据明暗偏好选择 `mtr-light` / `mtr-dark`，每次挂载重新读取。
+- 管理接口支持 GeoJSON/CSV/WKT 预览、创建、发布及业务样式保存，默认关闭，以 WORKBENCH_TOKEN 启用。完整 `/api/styles/{code}/style.json` 输出数据源及底图资源；工作台 UI 和首页切换完整样式接口尚未实现。
+- 底图内容保持文件管理。业务路线层插在建筑之前，站点、车辆、标签覆盖底图；组内按数据库 position 排序。语言与选中状态使用 MapLibre global-state / feature-state，不写回数据库。
 - 旧 `mtr` 表保留供一次性数据导入和显式迁移对照测试使用；正常运行不依赖它。
 - 原位置 SQL 仅保留在 Java 测试资源中，作为独立对照样本，不作为 Flyway 迁移执行。
 
-OSM 专用导入器不迁移。GeoJSON 导入、要素与样式编辑属于后续管理能力，尚未实现。
+OSM 专用导入器不迁移。通用导入不会生成或覆盖交通业务关系。现有几何编辑、覆盖导入和管理界面暂未实现，边界与接口见 [数据集发布设计](dataset-publishing.md)。

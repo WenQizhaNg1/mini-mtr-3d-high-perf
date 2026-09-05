@@ -18,6 +18,11 @@ postgres:
   connection_string: ${MARTIN_DATABASE_URL}
   pool_size: 4
   auto_publish: false
+  functions:
+    features:
+      schema: app
+      function: dataset_tile
+      cache: disable
   tables:
     mtr-routes:
       schema: app

@@ -29,6 +29,11 @@ spring:
 outbound:
   proxy-url: ${OUTBOUND_PROXY_URL:}
 
+workbench:
+  token: ${WORKBENCH_TOKEN:}
+  map-directory: ${MAP_DIRECTORY:../map}
+  martin-public-url: ${MARTIN_PUBLIC_URL:http://127.0.0.1:8081}
+
 server:
   address: ${JAVA_API_HOST:127.0.0.1}
   port: ${JAVA_API_PORT:3002}

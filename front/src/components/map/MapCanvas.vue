@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { createMtrMap, type MtrMap, type MapSelection } from '../../map/createMap';
 import type { TrainSnapshot } from '../../api/types';
+import { getMapStyle } from '../../api/styles';
 
 const props = defineProps<{
     language: 'en' | 'zh'; powerSave: boolean; selection: MapSelection;
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 const container = ref<HTMLElement>();
 let map: MtrMap | undefined;
 let anchorFrame = 0;
+const lifetime = new AbortController();
 
 function followSelection() {
     cancelAnimationFrame(anchorFrame);
@@ -27,17 +29,25 @@ watch(() => props.selection, followSelection);
 watch(() => props.language, value => map?.setLanguage(value));
 watch(() => props.powerSave, value => map?.setPowerSave(value));
 watch(() => props.frame, value => { if (value) map?.setSnapshot(value.snapshot, value.animate); });
-onMounted(() => {
-    map = createMtrMap(container.value!, {
-        onSelect: value => emit('select', value),
-        onError: message => emit('error', message),
-    });
-    map.setLanguage(props.language);
-    map.setPowerSave(props.powerSave);
-    if (props.frame) map.setSnapshot(props.frame.snapshot, props.frame.animate);
-    followSelection();
+onMounted(async () => {
+    try {
+        const code = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'mtr-dark' : 'mtr-light';
+        const style = await getMapStyle(code, lifetime.signal);
+        if (lifetime.signal.aborted) return;
+        map = createMtrMap(container.value!, {
+            onSelect: value => emit('select', value),
+            onError: message => emit('error', message),
+        }, style);
+        map.setLanguage(props.language);
+        map.setPowerSave(props.powerSave);
+        if (props.frame) map.setSnapshot(props.frame.snapshot, props.frame.animate);
+        followSelection();
+    } catch (cause) {
+        if (!lifetime.signal.aborted) emit('error', `Map style: ${String(cause)}`);
+    }
 });
 onBeforeUnmount(() => {
+    lifetime.abort();
     cancelAnimationFrame(anchorFrame);
     map?.destroy();
 });
