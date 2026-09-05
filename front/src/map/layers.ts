@@ -1,4 +1,5 @@
 import type { Map as MapLibreMap, CircleLayerSpecification, ExpressionSpecification, FillExtrusionLayerSpecification, LineLayerSpecification, SymbolLayerSpecification } from 'maplibre-gl';
+import { routeWidthExpression, ROUTE_CASING_RATIO } from './dimensions';
 export const MTR_SOURCE_ID = 'mtr';
 export const TRAIN_SOURCE_ID = 'mtr-trains';
 export const TRAIN_COLOUR: ExpressionSpecification = ['interpolate', ['linear'], 0.22, 0, ['get', 'colour'], 1, '#ffffff'];
@@ -11,7 +12,7 @@ const routeCasing: LineLayerSpecification = {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
         'line-color': '#ffffff',
-        'line-width': ['interpolate', ['exponential', Math.SQRT2], ['zoom'], 0, 12 / 128, 22, 192],
+        'line-width': routeWidthExpression(ROUTE_CASING_RATIO),
     },
 };
 
@@ -23,7 +24,7 @@ const routes: LineLayerSpecification = {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
         'line-color': ['coalesce', ['get', 'colour'], '#64748b'],
-        'line-width': ['interpolate', ['exponential', Math.SQRT2], ['zoom'], 0, 10 / 128, 22, 160],
+        'line-width': routeWidthExpression(),
     },
 };
 
@@ -50,10 +51,12 @@ const stations: CircleLayerSpecification = {
             'interpolate', ['linear'], ['zoom'],
             9, ['case', ['get', 'interchange'], 3, 2],
             11, ['case', ['get', 'interchange'], 5, 3.5],
-            14, ['case', ['get', 'interchange'], 7.5, 5.5],
+            14, ['case', ['get', 'interchange'], 17, 13],
+            18, ['case', ['get', 'interchange'], 42, 32],
+            22, ['case', ['get', 'interchange'], 120, 96],
         ],
         'circle-stroke-color': '#111827',
-        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 9, 1.5, 14, 2.5],
+        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 9, 1.5, 14, 3, 18, 5, 22, 8],
         'circle-pitch-alignment': 'map',
         'circle-pitch-scale': 'map',
     },
@@ -74,7 +77,8 @@ const stationLabels: SymbolLayerSpecification = {
         ],
         'text-font': ['Noto Sans CJK SC Bold'],
         'text-size': ['interpolate', ['linear'], ['zoom'], 10.5, 12, 14, 16, 18, 18],
-        'text-offset': [0, 1.1],
+        'text-offset': ['interpolate', ['linear'], ['zoom'], 10.5, ['literal', [0, 1.1]],
+            14, ['literal', [0, 1.6]], 18, ['literal', [0, 3]], 22, ['literal', [0, 7.5]]],
         'text-anchor': 'top',
         'text-optional': true,
         'text-padding': 3,

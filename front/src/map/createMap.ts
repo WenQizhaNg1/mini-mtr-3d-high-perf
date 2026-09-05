@@ -1,15 +1,20 @@
 import { addMtrLayers, TRAIN_SOURCE_ID, TRAIN_COLOUR } from './layers';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {
     GeoJSONSource,
     Map as MapLibreMap,
     NavigationControl,
     ScaleControl,
+    setWorkerUrl,
     type ErrorEvent,
 } from 'maplibre-gl';
 import type { LngLatBoundsLike } from 'maplibre-gl';
 import type { TrainPosition, TrainSnapshot } from '../api/types';
 import { trainFeatures } from './trainGeometry';
 import { mergeMotion, sampleMotion } from './trainMotion';
+
+// MapLibre 6 ships a separate module worker; let Vite resolve and bundle it.
+setWorkerUrl(workerUrl);
 
 const MARTIN_URL = (import.meta.env.VITE_MARTIN_URL || 'http://127.0.0.1:8081').replace(/\/$/, '');
 const TRAIN_TRANSITION_MS = 1000;
