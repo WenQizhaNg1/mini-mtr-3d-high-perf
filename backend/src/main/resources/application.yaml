@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: mini-mtr-backend
+  config:
+    # Support launching from either the repository root or backend/.
+    import: "optional:file:../.env[.properties],optional:file:.env[.properties]"
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://${POSTGRES_HOST:127.0.0.1}:${POSTGRES_PORT:15432}/${POSTGRES_DB:mtr}}
+    username: ${POSTGRES_USER:mtr}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 6
+      minimum-idle: 1
+      connection-timeout: 5000
+      data-source-properties:
+        reWriteBatchedInserts: true
+  jooq:
+    sql-dialect: POSTGRES
+  flyway:
+    default-schema: backend_meta
+    schemas: backend_meta
+    locations: classpath:db/migration
+    clean-disabled: true
+    baseline-on-migrate: false
+
+outbound:
+  proxy-url: ${OUTBOUND_PROXY_URL:}
+
+server:
+  address: ${JAVA_API_HOST:127.0.0.1}
+  port: ${JAVA_API_PORT:3002}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never

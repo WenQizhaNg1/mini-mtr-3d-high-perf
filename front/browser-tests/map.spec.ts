@@ -1,10 +1,28 @@
 import { expect, test } from '@playwright/test';
 
+test('Java live API and app-backed Martin tiles work without Node', async ({ page }) => {
+    const apiUrls: string[] = [];
+    page.on('request', request => {
+        if (new URL(request.url()).pathname.startsWith('/api/')) apiUrls.push(request.url());
+    });
+    const stream = page.waitForResponse(response => response.url().endsWith('/api/trains/live'));
+    await page.goto('/');
+    expect((await stream).status()).toBe(200);
+    await page.waitForFunction(() => {
+        const debug = (window as any).__mtrDebug;
+        return debug?.getTrainCount() > 0 && debug.map.getLayer('mtr-stations') && debug.map.isSourceLoaded('mtr')
+            && debug.map.queryRenderedFeatures({ layers: ['mtr-stations'] }).length > 0;
+    });
+    expect(apiUrls.length).toBeGreaterThan(0);
+    expect(apiUrls.every(url => new URL(url).port === '3002')).toBeTruthy();
+});
+
 for (const theme of ['light', 'dark'] as const) {
     test(`native route, station and train layers at multiple camera angles (${theme})`, async ({ page, request }) => {
+        test.setTimeout(60_000);
         await page.emulateMedia({ colorScheme: theme });
         await page.addInitScript(() => localStorage.setItem('mtr-language', 'zh'));
-        const response = await request.get('http://127.0.0.1:3001/api/trains?at=2026-09-04T00:00:00Z');
+        const response = await request.get('http://127.0.0.1:3002/api/trains?at=2026-09-04T00:00:00Z');
         expect(response.ok()).toBeTruthy();
         const snapshot = await response.json();
         await page.route('**/api/trains/live', route => route.fulfill({
@@ -53,7 +71,7 @@ for (const theme of ['light', 'dark'] as const) {
 test('replay, train/station picking, language, current information and live switching', async ({ page, request }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
-    const response = await request.get('http://127.0.0.1:3001/api/trains?at=2026-09-04T00:00:00Z');
+    const response = await request.get('http://127.0.0.1:3002/api/trains?at=2026-09-04T00:00:00Z');
     expect(response.ok()).toBeTruthy();
     const snapshot = await response.json();
     expect(snapshot.trains.length).toBeGreaterThan(0);

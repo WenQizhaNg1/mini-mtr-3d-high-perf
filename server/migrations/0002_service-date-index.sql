@@ -1,1 +1,0 @@
-CREATE INDEX "train_runs_service_date_idx" ON "mtr"."train_runs" USING btree ("service_date");

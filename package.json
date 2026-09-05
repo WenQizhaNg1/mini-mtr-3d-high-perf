@@ -4,20 +4,14 @@
   "description": "Hong Kong MTR visualization with Vue, MapLibre and PostGIS",
   "scripts": {
     "data:osm:build": "node scripts/build-osm-mtr.mjs",
-    "data:osm:import": "npm --prefix server run data:osm:import --",
-    "data:osm:test-positions": "node scripts/test-train-positions.mjs",
-    "data:mtr:schedule": "npm --prefix server run data:mtr:schedule --",
-    "db:migrate": "npm --prefix server run db:migrate",
-    "db:baseline": "npm --prefix server run db:baseline --",
-    "server:install": "npm --prefix server install",
-    "server:build": "npm --prefix server run build",
-    "server:typecheck": "npm --prefix server run typecheck",
-    "server": "npm --prefix server run dev",
+    "server:build": "mvn -f backend/pom.xml package",
+    "server": "mvn -f backend/pom.xml spring-boot:run",
+    "server:java": "mvn -f backend/pom.xml spring-boot:run",
     "front:install": "npm --prefix front install",
     "start": "npm --prefix front run dev",
     "build": "npm --prefix front run build",
-    "test:server": "npm --prefix server test",
-    "test": "npm --prefix front test && npm --prefix server test",
+    "test:server": "mvn -f backend/pom.xml test",
+    "test": "npm --prefix front test && npm run test:server",
     "build:prod": "npm --prefix front run build",
     "test:front": "npm --prefix front test",
     "test:browser": "npm --prefix front run test:browser"
@@ -27,8 +21,5 @@
   "license": "ISC",
   "devDependencies": {
     "fast-xml-parser": "^5.11.1"
-  },
-  "dependencies": {
-    "pg": "^8.23.0"
   }
 }

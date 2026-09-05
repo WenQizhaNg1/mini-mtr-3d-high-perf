@@ -32,26 +32,5 @@ services:
       - ./map:/map:ro
     restart: unless-stopped
 
-  train-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    environment:
-      API_HOST: 0.0.0.0
-      API_PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-mtr}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-mtr}
-      REALTIME_ENABLED: ${REALTIME_ENABLED:-true}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:${TRAIN_API_PORT:-3001}:3001"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
 volumes:
   mini-mtr-postgres-data:

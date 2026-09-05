@@ -132,13 +132,14 @@ function addMtrLayers(map: MapLibreMap, dark: boolean) {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
     });
-    map.addLayer(routeCasing);
-    map.addLayer(routes);
+    const buildingLayer = map.getStyle().layers.find(layer => layer.type === 'fill-extrusion')?.id;
+    map.addLayer(routeCasing, buildingLayer);
+    map.addLayer(routes, buildingLayer);
     map.addLayer(stations);
     map.addLayer(trains);
     map.addLayer(stationLabels);
-    map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.4, position: [1.5, 210, 40] });
     if (dark) {
+        map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.4, position: [1.5, 210, 40] });
         map.setPaintProperty('mtr-route-casing', 'line-color', '#283341');
         map.setPaintProperty('mtr-station-labels', 'text-color', '#f1f5f9');
         map.setPaintProperty('mtr-station-labels', 'text-halo-color', '#18222f');

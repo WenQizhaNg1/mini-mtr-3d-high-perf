@@ -1,6 +1,16 @@
 {
   "version": 8,
   "name": "Positron",
+  "light": {
+    "anchor": "viewport",
+    "position": [
+      1.15,
+      210,
+      45
+    ],
+    "color": "#ffffff",
+    "intensity": 0.25
+  },
   "metadata": {
     "mapbox:autocomposite": false,
     "mapbox:groups": {
@@ -322,18 +332,6 @@
         "text-halo-blur": 1,
         "text-halo-color": "rgb(242,243,240)",
         "text-halo-width": 1
-      }
-    },
-    {
-      "id": "building",
-      "type": "fill",
-      "source": "openmaptiles",
-      "source-layer": "building",
-      "minzoom": 12,
-      "paint": {
-        "fill-antialias": true,
-        "fill-color": "rgb(234, 234, 229)",
-        "fill-outline-color": "rgb(219, 219, 218)"
       }
     },
     {
@@ -1670,6 +1668,58 @@
           20,
           30
         ]
+      }
+    },
+    {
+      "id": "building",
+      "type": "fill-extrusion",
+      "source": "openmaptiles",
+      "source-layer": "building",
+      "minzoom": 13,
+      "filter": [
+        "!=",
+        [
+          "get",
+          "hide_3d"
+        ],
+        true
+      ],
+      "paint": {
+        "fill-extrusion-color": "#e0e5e9",
+        "fill-extrusion-height": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          [
+            "get",
+            "render_height"
+          ]
+        ],
+        "fill-extrusion-base": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0,
+          14,
+          [
+            "get",
+            "render_min_height"
+          ]
+        ],
+        "fill-extrusion-opacity": 1,
+        "fill-extrusion-vertical-gradient": false
       }
     },
     {

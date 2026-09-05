@@ -60,54 +60,17 @@ uses disused or razed track, a stop is more than 10 metres from its route, or
 the expected pattern and station counts change. See `AUDIT.md` for the source
 review and known normalization decisions.
 
-## PostGIS import
+## Database import and serving
 
-Set a PostgreSQL connection string for the current shell, then run the importer:
+The old Node OSM importer has been removed after the Java backend migration.
+`npm run data:osm:build` still produces offline GeoJSON, but does not import it
+into the database. A general GeoJSON import and feature editor is planned and
+has not been implemented yet.
 
-```powershell
-$env:DATABASE_URL = "postgresql://user:password@localhost:5432/database"
-npm run db:migrate
-npm run data:osm:import
-Remove-Item Env:DATABASE_URL
-```
+The existing local dataset has already been migrated to `app`. The Java backend
+retains an explicit, one-time importer from an existing `mtr` database snapshot;
+it does not import raw OSM. See [Java backend setup](../../backend/README.md).
 
-Database objects are created only by `npm run db:migrate`. The importer validates
-and transactionally replaces route patterns, route stops, and stations, then
-verifies all 24 patterns, 276 route stops, 98 stations, and their PostGIS
-geometries. Re-importing unchanged data preserves schedules and realtime offsets.
-
-If route-stop semantics changed for a pattern used by an existing schedule, the
-import stops before writing and reports the affected patterns and service dates.
-After reviewing the change, explicitly replace the network and regenerate those
-service dates in one transaction with:
-
-```powershell
-npm run data:osm:import -- --allow-pattern-changes
-```
-
-Regenerated runs receive fresh realtime offsets. The importer and schedule
-command share a PostgreSQL advisory lock so they cannot mix old and new route
-stops. Martin exposes the route and station tables as vector-tile sources;
-dynamic train positions are served by the Train API.
-
-For the local Docker stack, copy `.env.example` to `.env`, choose a local
-database password, and initialize the services in this order:
-
-```powershell
-Copy-Item .env.example .env
-npm run server:install
-docker compose up -d --wait postgres
-$env:DATABASE_URL = "postgresql://mtr:your-password@127.0.0.1:15432/mtr"
-npm run db:migrate
-npm run data:osm:import
-npm run data:mtr:schedule
-npm run data:osm:test-positions
-Remove-Item Env:DATABASE_URL
-docker compose up -d --build martin train-api
-```
-
-Martin then serves the dashboard at `http://127.0.0.1:8081/`, the route and
-station TileJSON documents at `/mtr-routes` and `/mtr-stations`, and their
-built-in composite source at `/mtr-routes,mtr-stations`. The Train API serves
-snapshots and SSE at `http://127.0.0.1:3001/api/trains` and
-`http://127.0.0.1:3001/api/trains/live`.
+Martin publishes `app.map_routes` and `app.map_stations` through the existing
+`/mtr-routes,mtr-stations` source on port 8081. Java provides train snapshots and
+SSE on port 3002. Old Node import, migration and schedule commands no longer apply.

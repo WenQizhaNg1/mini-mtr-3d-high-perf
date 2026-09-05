@@ -1,6 +1,6 @@
 # Mini MTR
 
-基于 Vue 3、MapLibre、Hono 与 PostGIS 的港铁地图。原作来自 [7gugu](https://github.com/7gugu/mini-mtr-3d)，灵感来自 [Mini Tokyo 3D](https://minitokyo3d.com/)。
+基于 Vue 3、MapLibre、Spring Boot 与 PostGIS 的港铁地图。原作来自 [7gugu](https://github.com/7gugu/mini-mtr-3d)，灵感来自 [Mini Tokyo 3D](https://minitokyo3d.com/)。
 
 - Martin 提供 OSM 底图及线路、站点矢量瓦片。
 - 后端计算列车位置，提供共享实时快照和无状态回放。
@@ -11,18 +11,21 @@
 
 ## 开发
 
-使用 Node 24 和 npm：
+使用 Node 24、Java 25 和 Maven：
 
 ```sh
 npm ci
 npm run front:install
-npm run server:install
+docker compose up -d postgres
+npm run server
+# Java 完成 Flyway 迁移后，在另一个终端执行：
+docker compose up -d martin
 npm start
 npm run build
 npm test
 ```
 
-按[后端说明](./docs/train-position-backend.md)初始化本地 PostGIS、Martin 和 API。前端地址为 http://127.0.0.1:8080。服务地址变化时，将 front/.env.example 复制为 front/.env 并调整。构建产物为 front/dist，托管时需在构建阶段配置浏览器可访问的 Martin/API 地址。
+按[Java 后端说明](./backend/README.md)配置根目录 .env 的 PostgreSQL 参数。前端地址为 http://127.0.0.1:8080，Java API 为 http://127.0.0.1:3002。服务地址变化时，将 front/.env.example 复制为 front/.env 并调整。构建产物为 front/dist，托管时需在构建阶段配置浏览器可访问的 Martin/API 地址。旧 Node 后端已删除；npm test 运行前端与 Java 单元测试，数据库集成验证命令见后端说明。
 
 [架构](./docs/architecture.md) · [迁移计划](./docs/server-refactor-plan.md) · [前端功能与验证](./docs/frontend-migration.md)
 

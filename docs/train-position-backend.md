@@ -1,5 +1,7 @@
 # 列车位置后端化
 
+> 历史设计记录：旧 Node 后端已删除，本文的 Node/Drizzle 命令不再适用。当前实现为 Java 25 + Spring Boot，启动、导入与验证以 [Java 后端说明](../backend/README.md) 为准。
+
 ## 结论
 
 PostGIS 保存业务数据并计算计划回放位置；后端 TypeScript 维护实时身份关联和连续运行轨迹，Hono 负责接口发布。浏览器按服务端时间消费短期沿线轨迹。Martin 继续提供静态矢量瓦片，不参与动态列车计算。实时机制于 2026-09-05 调整，详见 [实时连续推演](realtime-motion.md)。

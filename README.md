@@ -1,6 +1,6 @@
 # Mini MTR
 
-Hong Kong MTR visualization with Vue 3, MapLibre, Hono and PostGIS. Inspired by [Mini Tokyo 3D](https://minitokyo3d.com/); original project by [7gugu](https://github.com/7gugu/mini-mtr-3d).
+Hong Kong MTR visualization with Vue 3, MapLibre, Spring Boot and PostGIS. Inspired by [Mini Tokyo 3D](https://minitokyo3d.com/); original project by [7gugu](https://github.com/7gugu/mini-mtr-3d).
 
 [中文说明](./README_zh.md)
 
@@ -13,18 +13,21 @@ Positions are estimates based on generated schedules and live arrival correction
 
 ## Development
 
-Use Node 24 and npm:
+Use Node 24, Java 25 and Maven:
 
 ```sh
 npm ci
 npm run front:install
-npm run server:install
+docker compose up -d postgres
+npm run server
+# In another terminal, after Java has applied Flyway migrations:
+docker compose up -d martin
 npm start
 npm run build
 npm test
 ```
 
-Initialize the local PostGIS, Martin and API stack using [backend setup](./docs/train-position-backend.md). Frontend: http://127.0.0.1:8080. Copy front/.env.example to front/.env if the service URLs differ. Build output is front/dist; a hosted frontend requires accessible Martin/API URLs at build time.
+Configure root .env PostgreSQL settings using [backend setup](./backend/README.md). Frontend: http://127.0.0.1:8080; Java API: http://127.0.0.1:3002. Copy front/.env.example to front/.env if the service URLs differ. Build output is front/dist; a hosted frontend requires accessible Martin/API URLs at build time. The old Node backend has been removed; npm test runs frontend and Java unit tests.
 
 [Architecture](./docs/architecture.md) · [Migration plan](./docs/server-refactor-plan.md) · [Frontend functionality and checks](./docs/frontend-migration.md)
 

@@ -20,12 +20,12 @@ postgres:
   auto_publish: false
   tables:
     mtr-routes:
-      schema: mtr
-      table: route_patterns
+      schema: app
+      table: map_routes
       srid: 4326
       geometry_column: geom
       geometry_type: LINESTRING
-      id_column: osm_relation_id
+      id_column: feature_id
       layer_id: mtr_routes
       properties:
         id: text
@@ -35,8 +35,8 @@ postgres:
         colour: text
         length_m: float8
     mtr-stations:
-      schema: mtr
-      table: stations
+      schema: app
+      table: map_stations
       srid: 4326
       geometry_column: geom
       geometry_type: POINT

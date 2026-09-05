@@ -3,6 +3,7 @@ node_modules
 .env
 test-results
 playwright-report
+backend/target/
 
 map/*
 !map/martin.yaml
