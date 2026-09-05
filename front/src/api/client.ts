@@ -1,7 +1,3 @@
-// Wire contracts only; business rules remain in the Java backend.
-export type { TrainPosition, TrainSnapshot, NetworkCatalog, ServiceDaySnapshot,
-    OperationsSnapshot, WeatherSnapshot } from './contracts';
-
 export const API_URL = (import.meta.env?.VITE_TRAIN_API_URL || 'http://127.0.0.1:3002').replace(/\/$/, '');
 
 export async function get<T>(path: string, signal?: AbortSignal): Promise<T> {

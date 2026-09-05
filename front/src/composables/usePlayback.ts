@@ -1,5 +1,7 @@
 import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
-import { API_URL, get, type ServiceDaySnapshot, type TrainSnapshot } from './api.ts';
+import { API_URL } from '../api/client.ts';
+import { getReplayTrains, getReplayServiceDay, getServiceDay } from '../api/transit.ts';
+import type { ServiceDaySnapshot, TrainSnapshot } from '../api/types.ts';
 
 export function usePlayback(onSnapshot: (snapshot: TrainSnapshot, animate: boolean) => void) {
     const live = ref(true);
@@ -49,8 +51,8 @@ export function usePlayback(onSnapshot: (snapshot: TrainSnapshot, animate: boole
         try {
             const iso = new Date(time).toISOString();
             const [value, day] = await Promise.all([
-                get<TrainSnapshot>(`trains?at=${encodeURIComponent(iso)}`, controller.signal),
-                get<ServiceDaySnapshot>(`service-day?at=${encodeURIComponent(iso)}`, controller.signal),
+                getReplayTrains(iso, controller.signal),
+                getReplayServiceDay(iso, controller.signal),
             ]);
             if (disposed || version !== generation) return;
             service.value = day;
@@ -82,7 +84,7 @@ export function usePlayback(onSnapshot: (snapshot: TrainSnapshot, animate: boole
 
     async function refreshService(version: number) {
         try {
-            const day = await get<ServiceDaySnapshot>('service-day', request?.signal);
+            const day = await getServiceDay(request?.signal);
             if (disposed || version !== generation) return;
             service.value = day;
         } catch (cause) {

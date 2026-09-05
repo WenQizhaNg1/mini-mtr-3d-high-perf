@@ -1,5 +1,5 @@
 import type { FeatureCollection, Polygon } from 'geojson';
-import type { TrainPosition } from './api';
+import type { TrainPosition } from '../api/types';
 
 const EARTH_CIRCUMFERENCE = 40075016.68557849;
 type TrainProperties = Omit<TrainPosition, 'lng' | 'lat' | 'motion'> & { height: number };

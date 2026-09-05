@@ -1,4 +1,4 @@
-import type { TrainPosition } from './api';
+import type { TrainPosition } from '../api/types';
 
 type Motion = NonNullable<TrainPosition['motion']>;
 

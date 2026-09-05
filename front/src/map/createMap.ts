@@ -1,32 +1,27 @@
+import { addMtrLayers, TRAIN_SOURCE_ID, TRAIN_COLOUR } from './layers';
 import {
     GeoJSONSource,
     Map as MapLibreMap,
     NavigationControl,
     ScaleControl,
-    type CircleLayerSpecification,
     type ErrorEvent,
-    type ExpressionSpecification,
-    type FillExtrusionLayerSpecification,
-    type LineLayerSpecification,
-    type SymbolLayerSpecification,
 } from 'maplibre-gl';
 import type { LngLatBoundsLike } from 'maplibre-gl';
-import type { TrainPosition, TrainSnapshot } from './api';
-import { trainFeatures } from './train-geometry';
-import { mergeMotion, sampleMotion } from './train-motion';
+import type { TrainPosition, TrainSnapshot } from '../api/types';
+import { trainFeatures } from './trainGeometry';
+import { mergeMotion, sampleMotion } from './trainMotion';
 
 const MARTIN_URL = (import.meta.env.VITE_MARTIN_URL || 'http://127.0.0.1:8081').replace(/\/$/, '');
-const MTR_SOURCE_ID = 'mtr';
-const TRAIN_SOURCE_ID = 'mtr-trains';
 const TRAIN_TRANSITION_MS = 1000;
-const TRAIN_COLOUR: ExpressionSpecification = ['interpolate', ['linear'], 0.22, 0, ['get', 'colour'], 1, '#ffffff'];
 const NETWORK_BOUNDS: LngLatBoundsLike = [
     [113.91, 22.21],
     [114.30, 22.56],
 ];
 
+export type MapSelection = { kind: 'train' | 'station'; id: string } | null;
+
 interface MapCallbacks {
-    onSelect(selection: { kind: 'train' | 'station'; id: string } | null): void;
+    onSelect(selection: MapSelection): void;
     onError(message: string): void;
 }
 
@@ -37,113 +32,6 @@ export interface MtrMap {
     selectTrain(id: string | null): void;
     setPowerSave(enabled: boolean): void;
     destroy(): void;
-}
-
-const routeCasing: LineLayerSpecification = {
-    id: 'mtr-route-casing',
-    type: 'line',
-    source: MTR_SOURCE_ID,
-    'source-layer': 'mtr_routes',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: {
-        'line-color': '#ffffff',
-        'line-width': ['interpolate', ['exponential', Math.SQRT2], ['zoom'], 0, 12 / 128, 22, 192],
-    },
-};
-
-const routes: LineLayerSpecification = {
-    id: 'mtr-routes',
-    type: 'line',
-    source: MTR_SOURCE_ID,
-    'source-layer': 'mtr_routes',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: {
-        'line-color': ['coalesce', ['get', 'colour'], '#64748b'],
-        'line-width': ['interpolate', ['exponential', Math.SQRT2], ['zoom'], 0, 10 / 128, 22, 160],
-    },
-};
-
-const trains: FillExtrusionLayerSpecification = {
-    id: 'mtr-trains',
-    type: 'fill-extrusion',
-    source: TRAIN_SOURCE_ID,
-    paint: {
-        'fill-extrusion-color': TRAIN_COLOUR,
-        'fill-extrusion-height': ['get', 'height'],
-        'fill-extrusion-opacity': 1,
-        'fill-extrusion-vertical-gradient': true,
-    },
-};
-
-const stations: CircleLayerSpecification = {
-    id: 'mtr-stations',
-    type: 'circle',
-    source: MTR_SOURCE_ID,
-    'source-layer': 'mtr_stations',
-    paint: {
-        'circle-color': '#ffffff',
-        'circle-radius': [
-            'interpolate', ['linear'], ['zoom'],
-            9, ['case', ['get', 'interchange'], 3, 2],
-            11, ['case', ['get', 'interchange'], 5, 3.5],
-            14, ['case', ['get', 'interchange'], 7.5, 5.5],
-        ],
-        'circle-stroke-color': '#111827',
-        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 9, 1.5, 14, 2.5],
-        'circle-pitch-alignment': 'map',
-        'circle-pitch-scale': 'map',
-    },
-};
-
-const stationLabels: SymbolLayerSpecification = {
-    id: 'mtr-station-labels',
-    type: 'symbol',
-    source: MTR_SOURCE_ID,
-    'source-layer': 'mtr_stations',
-    minzoom: 10.5,
-    layout: {
-        'text-field': [
-            'format',
-            ['get', 'name_zh'], {},
-            '\n', {},
-            ['get', 'name_en'], { 'font-scale': 0.78 },
-        ],
-        'text-font': ['Noto Sans CJK SC Bold'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 10.5, 12, 14, 16, 18, 18],
-        'text-offset': [0, 1.1],
-        'text-anchor': 'top',
-        'text-optional': true,
-        'text-padding': 3,
-    },
-    paint: {
-        'text-color': '#343b43',
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 1.5,
-        'text-halo-blur': 0,
-    },
-};
-
-function addMtrLayers(map: MapLibreMap, dark: boolean) {
-    map.addSource(MTR_SOURCE_ID, {
-        type: 'vector',
-        url: `${MARTIN_URL}/mtr-routes,mtr-stations`,
-    });
-    map.addSource(TRAIN_SOURCE_ID, {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-    });
-    const buildingLayer = map.getStyle().layers.find(layer => layer.type === 'fill-extrusion')?.id;
-    map.addLayer(routeCasing, buildingLayer);
-    map.addLayer(routes, buildingLayer);
-    map.addLayer(stations);
-    map.addLayer(trains);
-    map.addLayer(stationLabels);
-    if (dark) {
-        map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.4, position: [1.5, 210, 40] });
-        map.setPaintProperty('mtr-route-casing', 'line-color', '#283341');
-        map.setPaintProperty('mtr-station-labels', 'text-color', '#f1f5f9');
-        map.setPaintProperty('mtr-station-labels', 'text-halo-color', '#18222f');
-    }
 }
 
 function interpolateBearing(from: number, to: number, progress: number): number {
@@ -253,7 +141,7 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks): M
     map.addControl(new ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
 
     map.on('load', () => {
-        addMtrLayers(map, prefersDark);
+        addMtrLayers(map, prefersDark, MARTIN_URL);
         updateLanguage();
         updateSelection();
         if (!window.location.hash) {

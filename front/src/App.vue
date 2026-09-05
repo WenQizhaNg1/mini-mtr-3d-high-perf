@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import MapView from './MapView.vue';
+import { RouterView } from 'vue-router';
 </script>
 
 <template>
-    <MapView />
+    <RouterView />
 </template>

@@ -1,0 +1,29 @@
+/* ============================================================= */
+/* ============  字体 (复古未来主义)  ============ */
+/* ============================================================= */
+/* 站名宋体: 本地若装有正版「铁宋 MTR Sung」则优先, 否则回退开源昭源宋体 */
+@font-face {
+    font-family: 'Chiron Sung HK';
+    src: url('../../../assets/fonts/ChironSungHK-M-subset.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+}
+/* 数字/时间: 点阵宋体·方点 (点状像素) */
+@font-face {
+    font-family: 'Dotted Songti Square';
+    src: url('../../../assets/fonts/DottedSongtiSquare-subset.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+:root {
+    /* 铁宋风格宋体链 */
+    --font-serif-mtr: "MTR Sung", "鐵宋", "MTRSong", "Chiron Sung HK", "Noto Serif TC", "Songti HK", "PMingLiU", serif;
+    /* 黑体 */
+    --font-heiti: "Heiti SC", "Heiti TC", "STHeiti", "PingFang SC", "PingFang HK", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    /* 点状像素字体链 (数字) */
+    --font-dot: "Dotted Songti Square", "DotGothic16", "Courier New", monospace;
+    /* 霓虹辉光色 */
+    --neon-cyan: #7dd3fc;
+    --neon-amber: #fbbf24;
+}

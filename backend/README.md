@@ -78,7 +78,7 @@ java -jar backend/target/backend-0.1.0-SNAPSHOT.jar --spring.main.web-applicatio
 - `GET /api/operations`：实时轮询状态和线路运营提示。
 - `GET /api/weather?lang=zh`：当前天文台天气，支持 zh/en，默认 zh。分语言缓存 10 分钟；刷新失败保留旧值、标记 stale，1 分钟后重试；没有旧值时返回 503。上游请求超时 10 秒。
 
-当前 API 保持 MTR 兼容范围，尚未开放多运营方查询。计划回放不混入实时延误，`delaySeconds` 为 0。实时结果带 `estimate`（planned / observed / predicted / stale / conflict）和 `motion`；它是基于到站信息的推演，并非列车 GPS 定位。前端响应类型定义在 `front/src/contracts.ts`，不再引用旧 Node 源码；公开只读 API 支持跨域 GET（不携带凭据），后续编辑接口需要独立的授权与跨域策略。
+当前 API 保持 MTR 兼容范围，尚未开放多运营方查询。计划回放不混入实时延误，`delaySeconds` 为 0。实时结果带 `estimate`（planned / observed / predicted / stale / conflict）和 `motion`；它是基于到站信息的推演，并非列车 GPS 定位。前端响应类型定义在 `front/src/api/types.ts`，不再引用旧 Node 源码；公开只读 API 支持跨域 GET（不携带凭据），后续编辑接口需要独立的授权与跨域策略。
 
 ## 计划生成与回放
 

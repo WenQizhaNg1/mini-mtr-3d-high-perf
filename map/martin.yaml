@@ -12,7 +12,7 @@ cache:
 mbtiles:
   sources:
     osm:
-      path: /map/osm-latest.mbtiles
+      path: /map/hong-kong.mbtiles
 
 postgres:
   connection_string: ${MARTIN_DATABASE_URL}
