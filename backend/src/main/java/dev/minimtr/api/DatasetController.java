@@ -29,6 +29,23 @@ public class DatasetController {
     public ResponseEntity<Map<String, Object>> inspect(@RequestBody DatasetImport input) { return response(datasets.inspect(input)); }
     @PostMapping("/api/datasets")
     public ResponseEntity<JsonNode> create(@RequestBody DatasetImport input) { return ResponseEntity.status(201).cacheControl(CacheControl.noStore()).body(datasets.create(input)); }
+    @GetMapping("/api/admin/datasets/{code}/features")
+    public ResponseEntity<Map<String,Object>> features(@PathVariable String code) { return response(datasets.features(code)); }
+    @PutMapping("/api/admin/datasets/{code}/features/{key}")
+    public ResponseEntity<Map<String,Object>> saveFeature(@PathVariable String code, @PathVariable String key, @RequestBody JsonNode input) {
+        return response(datasets.saveFeature(code, key, input));
+    }
+    @GetMapping("/api/admin/datasets/{code}/features/{key}")
+    public ResponseEntity<Object> feature(@PathVariable String code,@PathVariable String key) {
+        return response(datasets.feature(code,key));
+    }
+    @DeleteMapping("/api/admin/datasets/{code}/features/{key}")
+    public ResponseEntity<Void> deleteFeature(@PathVariable String code, @PathVariable String key) {
+        datasets.deleteFeature(code, key); return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/api/admin/datasets/{code}/import")
+    public ResponseEntity<Map<String,Object>> update(@PathVariable String code, @RequestParam(defaultValue="merge") String mode,
+            @RequestBody DatasetImport input) { return response(datasets.update(code, input, mode)); }
     public record Publication(Boolean published) {}
     @PutMapping("/api/datasets/{code}/publication")
     public ResponseEntity<JsonNode> publish(@PathVariable String code, @RequestBody Publication input) {

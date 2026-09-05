@@ -1,74 +1,42 @@
 package dev.minimtr.api;
 
-import dev.minimtr.model.vo.NetworkVo;
-import dev.minimtr.model.vo.ServiceDayVo;
-import dev.minimtr.service.NetworkService;
-import dev.minimtr.service.ServiceDayService;
-import dev.minimtr.service.TrainService;
-import dev.minimtr.service.LiveTrainService;
-import dev.minimtr.service.RealtimeService;
-import dev.minimtr.model.vo.OperationsVo;
-import java.time.Clock;
+import dev.minimtr.service.*;
 import java.time.Instant;
-import java.util.Map;
-import org.springframework.http.CacheControl;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 public class TransitController {
-    private final NetworkService network;
-    private final ServiceDayService serviceDays;
-    private final TrainService trains;
-    private final Clock clock;
-    private final LiveTrainService live;
-    private final RealtimeService realtime;
-
-    public TransitController(NetworkService network, ServiceDayService serviceDays, TrainService trains, Clock clock,
-            LiveTrainService live, RealtimeService realtime) {
-        this.network = network;
-        this.serviceDays = serviceDays;
-        this.trains = trains;
-        this.clock = clock;
-        this.live = live;
-        this.realtime = realtime;
+    private final TransitFrames frames;
+    private final TransitConfigService configs;
+    private final MotionStreamService streams;
+    public TransitController(TransitFrames frames,TransitConfigService configs,MotionStreamService streams) {
+        this.frames=frames; this.configs=configs; this.streams=streams;
     }
-
+    private ResponseEntity<?> response(Object value) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(value);
+    }
+    @GetMapping("/api/operators")
+    public ResponseEntity<?> operators() {
+        return response(configs.list().stream().map(c -> java.util.Map.of("code",c.code(),"name",c.config().name(),
+                "timezone",c.config().timezone(),"mode",c.config().mode(),"modes",configs.adapter(c.config().adapter()).modes())).toList());
+    }
     @GetMapping("/api/network")
-    public ResponseEntity<NetworkVo> network() {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(network.load());
-    }
-
+    public ResponseEntity<?> network(@RequestParam(defaultValue="mtr") String operator) { return response(frames.network(operator)); }
     @GetMapping("/api/service-day")
-    public ResponseEntity<ServiceDayVo> serviceDay(@RequestParam(required = false) Instant at) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(serviceDays.load(at == null ? clock.instant() : at));
+    public ResponseEntity<?> serviceDay(@RequestParam(defaultValue="mtr") String operator,@RequestParam(required=false) Instant at) {
+        return response(frames.serviceDay(operator,at));
     }
-
     @GetMapping("/api/trains")
-    public ResponseEntity<?> trains(@RequestParam(required = false) Instant at) {
-        var snapshot = at == null ? live.latest() : trains.load(at);
-        if (snapshot == null) return unavailable();
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(snapshot);
+    public ResponseEntity<?> trains(@RequestParam(defaultValue="mtr") String operator,@RequestParam(required=false) String mode,
+            @RequestParam(required=false) Instant at) { return response(frames.frame(operator,mode,at)); }
+    @GetMapping(value="/api/trains/live",produces="text/event-stream")
+    public ResponseEntity<SseEmitter> live(@RequestParam(defaultValue="mtr") String operator,@RequestParam(required=false) String mode) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Accel-Buffering","no").body(streams.subscribe(operator,mode));
     }
-
-    @GetMapping(value = "/api/trains/live", produces = "text/event-stream")
-    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> live() {
-        var emitter = live.subscribe();
-        if (emitter == null) return ResponseEntity.status(503).cacheControl(CacheControl.noStore()).build();
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .header("X-Accel-Buffering", "no").body(emitter);
-    }
-
-    @GetMapping("/api/operations")
-    public ResponseEntity<OperationsVo> operations() {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(realtime.operations());
-    }
-
-    private ResponseEntity<?> unavailable() {
-        return ResponseEntity.status(503).cacheControl(CacheControl.noStore())
-                .body(Map.of("error", "Live snapshot is not ready"));
+    @GetMapping(value="/api/transit/events",produces="text/event-stream")
+    public ResponseEntity<SseEmitter> changes(@RequestParam String operator) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Accel-Buffering","no").body(streams.changes(operator));
     }
 }

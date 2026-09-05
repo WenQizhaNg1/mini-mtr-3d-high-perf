@@ -10,6 +10,7 @@ map/*
 !map/style/
 map/style/*
 !map/style/positron/
+!map/style/osm-liberty-dark/
 !map/sprites/
 map/sprites/*
 !map/sprites/positron/

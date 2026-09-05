@@ -472,7 +472,8 @@
 /* --- 选中列车信息框 --- */
 .train-popup {
     position: absolute;
-    transform: translate(-50%, calc(-100% - 6px));
+    /* Clear the roof and half-length of the vehicle in a tilted view. */
+    transform: translate(-50%, calc(-100% - 56px));
     pointer-events: none;
     z-index: 950;
     display: flex;

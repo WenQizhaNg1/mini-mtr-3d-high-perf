@@ -40,9 +40,15 @@ public class MapStyleService {
 
     @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public ObjectNode load(String code) {
+        return load(code,"mtr");
+    }
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public ObjectNode load(String code,String operator) {
+        require(operator.matches("[a-z][a-z0-9-]{0,63}"),"Invalid operator");
         var style = styles.load(code).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Style not found"));
         var output = basemap(style.basemap());
         output.put("name", style.name());
+        output.set("metadata",style.metadata());
         var sources = (ObjectNode) output.get("sources");
         var baseLayers = output.withArray("layers");
         var routeLayers = json.createArrayNode();
@@ -51,12 +57,12 @@ public class MapStyleService {
         baseLayers.forEach(layer -> ids.add(layer.path("id").asText()));
         for (var layer : style.layers()) {
             String source = layer.path("source").asText();
-            var definition = source(source);
+            var definition = source(source,operator);
             // Unpublishing a dataset removes it from newly requested styles.
             if (definition == null) continue;
             require(ids.add(layer.path("id").asText()), "Layer ID conflicts with basemap");
             sources.set(source, definition);
-            if (source.equals("mtr") && layer.path("source-layer").asText().equals("mtr_routes")
+            if (layer.path("metadata").path("role").asText().equals("routes")
                     && layer.path("type").asText().equals("line")) routeLayers.add(layer);
             else overlayLayers.add(layer);
         }
@@ -95,7 +101,7 @@ public class MapStyleService {
             require(TYPES.contains(type), "Unsupported layer type");
             String source = layer.path("source").asText();
             require(source(source) != null, "Source is not published: " + source);
-            if (source.equals("mtr")) require(Set.of("mtr_routes", "mtr_stations").contains(layer.path("source-layer").asText()), "Unknown MTR source-layer");
+            if (source.equals("transit")) require(Set.of("routes", "stations").contains(layer.path("source-layer").asText()), "Unknown transit source-layer");
             else if (source.startsWith("dataset:")) {
                 require(layer.path("source-layer").asText().equals("features"), "Dataset source-layer must be features");
                 var geometries = datasets.geometryTypes(source.substring(8));
@@ -111,9 +117,11 @@ public class MapStyleService {
             for (String key : List.of("paint", "layout")) require(!layer.has(key) || layer.get(key).isObject(), key + " must be an object");
             require(!layer.has("filter") || layer.get("filter").isArray(), "filter must be an expression array");
             if (layer.path("layout").has("visibility")) require(Set.of("visible", "none").contains(layer.path("layout").path("visibility").asText()), "Invalid visibility");
-            for (var property : layer.properties()) require(Set.of("id", "source", "source-layer", "type", "minzoom", "maxzoom", "paint", "layout", "filter").contains(property.getKey()), "Unsupported layer property: " + property.getKey());
+            require(!layer.has("metadata") || layer.get("metadata").isObject(),"metadata must be an object");
+            for (var property : layer.properties()) require(Set.of("id", "source", "source-layer", "type", "minzoom", "maxzoom", "paint", "layout", "filter","metadata").contains(property.getKey()), "Unsupported layer property: " + property.getKey());
         }
-        repo.save(code, name, basemap, layers);
+        require(!input.has("metadata") || input.get("metadata").isObject(),"metadata must be an object");
+        repo.save(code, name, basemap, layers,input.has("metadata")?input.get("metadata"):json.createObjectNode());
     }
 
     private static double zoom(JsonNode layer, String name, double fallback) {
@@ -125,12 +133,16 @@ public class MapStyleService {
     }
 
     private ObjectNode source(String key) {
+        return source(key,"mtr");
+    }
+    private ObjectNode source(String key,String operator) {
         var source = json.createObjectNode();
-        if (key.equals("mtr-trains")) {
+        if (key.equals("vehicles")) {
             source.put("type", "geojson").put("promoteId", "id");
             source.set("data", json.readTree("{\"type\":\"FeatureCollection\",\"features\":[]}"));
-        } else if (key.equals("mtr")) {
-            source.put("type", "vector").put("url", martin + "/mtr-routes,mtr-stations");
+        } else if (key.equals("transit")) {
+            source.put("type","vector").put("minzoom",0).put("maxzoom",22);
+            source.putArray("tiles").add(martin+"/transit/{z}/{x}/{y}?operator="+operator);
         } else if (key.startsWith("dataset:")) {
             String code = key.substring(8);
             if (datasets.find(code, false) == null) return null;
@@ -163,14 +175,14 @@ public class MapStyleService {
 
     public ObjectNode catalog() {
         var result = json.createObjectNode();
-        var mtr = result.putObject("mtr");
-        mtr.put("name", "港铁").set("source", source("mtr"));
+        var mtr = result.putObject("transit");
+        mtr.put("name", "交通网络（当前运营方）").set("source", source("transit"));
         mtr.set("layers", json.readTree("""
-                [{"id":"mtr_routes","geometry":"LineString","fields":{"line_id":"string","colour":"string","id":"string"}},
-                 {"id":"mtr_stations","geometry":"Point","fields":{"code":"string","name_zh":"string","name_en":"string","interchange":"boolean"}}]
+                [{"id":"routes","geometry":"LineString","fields":{"line_id":"string","colour":"string","id":"string"}},
+                 {"id":"stations","geometry":"Point","fields":{"code":"string","name_zh":"string","name_en":"string","interchange":"boolean"}}]
                 """));
-        var trains = result.putObject("mtr-trains");
-        trains.put("name", "实时列车（工作台使用示意要素）").set("source", source("mtr-trains"));
+        var trains = result.putObject("vehicles");
+        trains.put("name", "车辆（工作台使用示意要素）").set("source", source("vehicles"));
         trains.set("layers", json.readTree("[{\"id\":\"\",\"geometry\":\"Polygon\",\"fields\":{\"colour\":\"string\",\"height\":\"number\"}}]"));
         for (var dataset : datasets.list(false)) {
             String code = dataset.path("code").asText();

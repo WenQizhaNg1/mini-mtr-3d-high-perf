@@ -6,6 +6,7 @@ export interface MapStyle {
     name: string;
     basemap: string;
     layers: LayerSpecification[];
+    metadata?: Record<string, unknown>;
 }
 
 export const getMapStyle = (code: string, signal?: AbortSignal) =>
@@ -18,7 +19,7 @@ export interface SourceEntry {
     layers: { id: string; geometry: string; fields: Record<string, string> }[];
 }
 export type SourceCatalog = Record<string, SourceEntry>;
-export const getFullStyle = (code: string, signal?: AbortSignal) => get<StyleSpecification>(`styles/${encodeURIComponent(code)}/style.json`, signal);
+export const getFullStyle = (code: string, signal?: AbortSignal, operator = 'mtr') => get<StyleSpecification>(`styles/${encodeURIComponent(code)}/style.json?operator=${encodeURIComponent(operator)}`, signal);
 export const listStyles = (signal?: AbortSignal) => request<Omit<MapStyle, 'layers'>[]>('styles', { signal });
 export const getSources = (signal?: AbortSignal) => request<SourceCatalog>('map-sources', { signal });
 export const getBasemap = (code: string, signal?: AbortSignal) => request<StyleSpecification>(`basemaps/${code}/style.json`, { signal });

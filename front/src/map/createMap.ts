@@ -1,4 +1,4 @@
-import { TRAIN_SOURCE_ID } from './layers';
+import { role, roleSource } from './roles';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {
     GeoJSONSource,
@@ -8,7 +8,6 @@ import {
     setWorkerUrl,
     type ErrorEvent,
 } from 'maplibre-gl';
-import type { LngLatBoundsLike } from 'maplibre-gl';
 import type { TrainPosition, TrainSnapshot } from '../api/types';
 import type { StyleSpecification } from 'maplibre-gl';
 import { trainFeatures } from './trainGeometry';
@@ -18,20 +17,20 @@ import { mergeMotion, sampleMotion } from './trainMotion';
 setWorkerUrl(workerUrl);
 
 const TRAIN_TRANSITION_MS = 1000;
-const NETWORK_BOUNDS: LngLatBoundsLike = [
-    [113.91, 22.21],
-    [114.30, 22.56],
-];
 
 export type MapSelection = { kind: 'train' | 'station'; id: string } | null;
 
 interface MapCallbacks {
     onSelect(selection: MapSelection): void;
     onError(message: string): void;
+    onPitch?(pitch: number): void;
 }
 
 export interface MtrMap {
+    fitBounds(bounds: number[]): void;
+    setStyle(style: StyleSpecification): void;
     getSelectionPoint(): { x: number; y: number } | null;
+    followSelectedTrain(): void;
     setSnapshot(snapshot: TrainSnapshot, animate: boolean): void;
     setLanguage(language: 'en' | 'zh'): void;
     selectTrain(id: string | null): void;
@@ -72,7 +71,8 @@ function createTrainRenderer(map: MapLibreMap) {
 
     const render = (now: number) => {
         if (!document.hidden && now - lastRenderAt >= (powerSave ? 1000 : 1000 / 30)) {
-            const source = map.getSource(TRAIN_SOURCE_ID) as GeoJSONSource | undefined;
+            const sourceId = roleSource(map.getStyle(), 'vehicles');
+            const source = sourceId ? map.getSource(sourceId) as GeoJSONSource | undefined : undefined;
             const zoom = map.getZoom();
             if (source && (dirty || zoom !== renderedZoom)) {
                 source.setData(trainFeatures(positionsAt(now), zoom));
@@ -90,8 +90,10 @@ function createTrainRenderer(map: MapLibreMap) {
             const now = performance.now();
             previous = new Map(positionsAt(now).map(train => [train.id, train]));
             const hasMotion = snapshot.trains.some(train => train.motion?.length);
-            if (hasMotion && (!liveClock || !animate)) liveClock = { server: Date.parse(snapshot.timestamp), local: now };
-            if (!hasMotion) liveClock = null;
+            const server = Date.parse(snapshot.timestamp);
+            if (!hasMotion || !animate) liveClock = null;
+            else if (!liveClock || Math.abs(server - liveClock.server - now + liveClock.local) > 3000)
+                liveClock = {server, local:now};
             targets = new Map(snapshot.trains.map(train => {
                 const old = targets.get(train.id);
                 return [train.id, animate && train.motion?.length && old?.motion?.length
@@ -102,6 +104,7 @@ function createTrainRenderer(map: MapLibreMap) {
             dirty = true;
         },
         getTrainCount: () => targets.size,
+        refresh() { dirty = true; },
         getPosition: (id: string) => positionsAt(performance.now()).find(train => train.id === id),
         setPowerSave(enabled: boolean) { powerSave = enabled; },
         stop() {
@@ -114,23 +117,28 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, st
     const map = new MapLibreMap({
         container,
         style,
-        center: [114.11, 22.36],
-        zoom: 10.3,
+        center: [114.165, 22.285],
+        zoom: 14,
         pitch: 42,
         bearing: -12,
         hash: true,
         maxPitch: 70,
     });
     const renderer = createTrainRenderer(map);
+    const updatePitch = () => callbacks.onPitch?.(map.getPitch());
+    map.on('pitch', updatePitch);
+    updatePitch();
     let language: 'en' | 'zh' = 'zh';
+    let styleReady = false;
     let selected: string | null = null;
     let stationAnchor: [number, number] | null = null;
     const updateLanguage = () => {
-        if (map.getSource(TRAIN_SOURCE_ID)) map.setGlobalStateProperty('language', language);
+        if (styleReady) map.setGlobalStateProperty('language', language);
     };
     const updateSelection = () => {
-        if (selected && map.getSource(TRAIN_SOURCE_ID))
-            map.setFeatureState({ source: TRAIN_SOURCE_ID, id: selected }, { selected: true });
+        const source = roleSource(map.getStyle(), 'vehicles');
+        if (styleReady && selected && source && map.getSource(source))
+            map.setFeatureState({ source, id: selected }, { selected: true });
     };
 
     Object.assign(window, {
@@ -143,46 +151,71 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, st
     map.addControl(new NavigationControl({ visualizePitch: true }), 'top-right');
     map.addControl(new ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
 
-    map.on('load', () => {
+    let interactiveLayers: string[] = [];
+    const pointerEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+    const pointerLeave = () => { map.getCanvas().style.cursor = ''; };
+    map.on('style.load', () => {
+        styleReady = true;
         updateLanguage();
         updateSelection();
-        if (!window.location.hash) {
-            map.fitBounds(NETWORK_BOUNDS, { padding: 36, pitch: 42, bearing: -12, duration: 0 });
-        }
+        renderer.refresh();
 
-        for (const layer of ['mtr-stations', 'mtr-trains']) {
-            if (!map.getLayer(layer)) continue;
-            map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
-            map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
+        if (interactiveLayers.length) {
+            map.off('mouseenter', interactiveLayers, pointerEnter);
+            map.off('mouseleave', interactiveLayers, pointerLeave);
         }
-        map.on('click', event => {
-            const layers = ['mtr-trains', 'mtr-stations'].filter(id => map.getLayer(id));
-            const features = layers.length ? map.queryRenderedFeatures(event.point, { layers }) : [];
-            const train = features.find(feature => feature.layer.id === 'mtr-trains');
-            const station = features.find(feature => feature.layer.id === 'mtr-stations');
-            stationAnchor = station?.geometry.type === 'Point' ? station.geometry.coordinates.slice(0, 2) as [number, number] : null;
-            callbacks.onSelect(train ? { kind: 'train', id: String(train.properties.id) }
-                : station ? { kind: 'station', id: String(station.properties.code) } : null);
-        });
-
+        interactiveLayers = map.getStyle().layers.filter(layer => ['vehicles','stations'].includes(role(layer))).map(layer => layer.id);
+        if (interactiveLayers.length) {
+            map.on('mouseenter', interactiveLayers, pointerEnter);
+            map.on('mouseleave', interactiveLayers, pointerLeave);
+        }
+    });
+    map.on('click', event => {
+        if (!styleReady) return;
+        const features = interactiveLayers.length ? map.queryRenderedFeatures(event.point, { layers: interactiveLayers }) : [];
+        const train = features.find(feature => role(feature.layer) === 'vehicles');
+        const station = features.find(feature => role(feature.layer) === 'stations');
+        stationAnchor = station?.geometry.type === 'Point' ? station.geometry.coordinates.slice(0, 2) as [number, number] : null;
+        callbacks.onSelect(train ? { kind: 'train', id: String(train.properties.id) }
+            : station ? { kind: 'station', id: String(station.properties.code) } : null);
     });
 
     map.on('error', (event: ErrorEvent) => { console.error('[MapLibre]', event.error); callbacks.onError(event.error.message); });
 
     return {
+        fitBounds(bounds) { map.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]], {padding:90,maxZoom:16}); },
+        setStyle(value) {
+            styleReady = false;
+            pointerLeave();
+            map.setStyle(value, { diff: false });
+        },
         getSelectionPoint() {
             const train = selected ? renderer.getPosition(selected) : undefined;
             const location = train ? [train.lng, train.lat] as [number, number] : stationAnchor;
             return location ? map.project(location) : null;
         },
+        followSelectedTrain() {
+            // Let the initial pan and user zoom/rotation finish before tracking resumes.
+            if (!selected || map.isMoving()) return;
+            const train = renderer.getPosition(selected);
+            if (!train) return;
+            const center = map.getCenter();
+            if (center.lng !== train.lng || center.lat !== train.lat)
+                map.jumpTo({ center: [train.lng, train.lat] });
+        },
         setSnapshot: renderer.setSnapshot,
         setPowerSave: renderer.setPowerSave,
         setLanguage(value) { language = value; updateLanguage(); },
         selectTrain(id) {
-            if (selected && map.getSource(TRAIN_SOURCE_ID))
-                map.removeFeatureState({ source: TRAIN_SOURCE_ID, id: selected }, 'selected');
+            if (selected === id) return;
+            if (selected) map.stop();
+            const source = roleSource(map.getStyle(), 'vehicles');
+            if (styleReady && selected && source && map.getSource(source))
+                map.removeFeatureState({ source, id: selected }, 'selected');
             selected = id;
             updateSelection();
+            const train = id ? renderer.getPosition(id) : undefined;
+            if (train) map.easeTo({ center: [train.lng, train.lat], duration: 450 });
         },
         destroy() {
             renderer.stop();

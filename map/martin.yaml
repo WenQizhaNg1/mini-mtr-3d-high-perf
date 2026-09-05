@@ -23,36 +23,10 @@ postgres:
       schema: app
       function: dataset_tile
       cache: disable
-  tables:
-    mtr-routes:
+    transit:
       schema: app
-      table: map_routes
-      srid: 4326
-      geometry_column: geom
-      geometry_type: LINESTRING
-      id_column: feature_id
-      layer_id: mtr_routes
-      properties:
-        id: text
-        line_id: text
-        from_code: text
-        to_code: text
-        colour: text
-        length_m: float8
-    mtr-stations:
-      schema: app
-      table: map_stations
-      srid: 4326
-      geometry_column: geom
-      geometry_type: POINT
-      layer_id: mtr_stations
-      properties:
-        code: text
-        name: text
-        name_en: text
-        name_zh: text
-        line_ids: text
-        interchange: bool
+      function: transit_tile
+      cache: disable
 
 fonts:
   paths:

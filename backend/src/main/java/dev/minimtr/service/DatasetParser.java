@@ -79,13 +79,14 @@ public class DatasetParser {
                         var properties = feature.get("properties");
                         require(properties == null || properties.isNull() || properties.isObject(), "properties must be an object");
                         add(rows, fields, seen, points, new GeoJsonReader().read(geom.toString()),
-                                properties == null || properties.isNull() ? json.createObjectNode() : (ObjectNode) properties, mapping);
+                                properties == null || properties.isNull() ? json.createObjectNode() : (ObjectNode) properties, mapping,
+                                key(input.keyField(), properties, feature.get("id")));
                     }
                 }
                 case "wkt" -> {
                     require(mapping.isEmpty(), "Pure WKT has no property fields to map");
                     for (String line : input.content().lines().filter(s -> !s.isBlank()).toList())
-                        add(rows, fields, seen, points, readWkt(line), json.createObjectNode(), mapping);
+                        add(rows, fields, seen, points, readWkt(line), json.createObjectNode(), mapping, null);
                 }
                 case "csv" -> {
                     var format = CSVFormat.RFC4180.builder().setHeader().setSkipHeaderRecord(true).get();
@@ -105,7 +106,7 @@ public class DatasetParser {
                             String geometry = wkt ? row.get(input.geometryColumn()) : "POINT ("
                                     + Double.parseDouble(row.get(input.longitudeColumn())) + " "
                                     + Double.parseDouble(row.get(input.latitudeColumn())) + ")";
-                            add(rows, fields, seen, points, readWkt(geometry), props, mapping);
+                            add(rows, fields, seen, points, readWkt(geometry), props, mapping, key(input.keyField(), props, null));
                         }
                     }
                 }
@@ -115,6 +116,9 @@ public class DatasetParser {
         catch (Exception e) { throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Invalid " + input.format() + " near feature " + (rows.size() + 1) + ": " + e.getMessage(), e); }
         require(!rows.isEmpty(), "Dataset is empty");
+        var keys = new HashSet<String>();
+        for (var row : rows) if (row.sourceKey() != null)
+            require(keys.add(row.sourceKey()), "Duplicate source key: " + row.sourceKey());
         require(seen.containsAll(mapping.keySet()), "A mapped source field does not exist");
         fields.replaceAll((key, type) -> type.equals("null") ? "string" : type);
         return new ParsedDataset(List.copyOf(rows), fields);
@@ -135,7 +139,7 @@ public class DatasetParser {
     }
 
     private void add(List<Feature> rows, Map<String, String> fields, Set<String> seen, int[] points,
-            Geometry geom, ObjectNode properties, Map<String, String> mapping) {
+            Geometry geom, ObjectNode properties, Map<String, String> mapping, String sourceKey) {
         require(rows.size() < 10000, "Import exceeds 10000 features");
         points[0] += geom.getNumPoints();
         require(points[0] <= 200000, "Import exceeds 200000 coordinates");
@@ -162,7 +166,19 @@ public class DatasetParser {
             if (previous == null || previous.equals("null")) fields.put(key, type);
             mapped.set(key, value);
         }
-        rows.add(new Feature(geom.toText(), mapped, geom.getGeometryType()));
+        rows.add(new Feature(geom.toText(), mapped, geom.getGeometryType(), sourceKey));
+    }
+
+    private static String key(String field, JsonNode properties, JsonNode id) {
+        var value = field == null || field.isBlank() ? id : properties == null ? null : properties.get(field);
+        if (value == null || value.isNull()) {
+            require(field == null || field.isBlank(), "Missing source key field: " + field);
+            return null;
+        }
+        require(value.isString() || value.isNumber(), "Source key must be a string or number");
+        String key = value.asText();
+        require(!key.isBlank() && key.length() <= 200, "Source key must contain 1–200 characters");
+        return key;
     }
 
     private static boolean validField(String value) {

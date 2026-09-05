@@ -98,13 +98,13 @@ class DatasetIT {
             assertEquals("wkt", json.readTree(inspection.body()).path("fields").path(0).asText());
             var catalog = client.send(HttpRequest.newBuilder(URI.create(base + "/api/map-sources")).GET().build(), HttpResponse.BodyHandlers.ofString());
             assertEquals(200, catalog.statusCode(), catalog.body());
-            assertTrue(json.readTree(catalog.body()).has("mtr"));
+            assertTrue(json.readTree(catalog.body()).has("transit"));
             for (String code : new String[]{"mtr-light", "mtr-dark"}) {
                 var response = client.send(HttpRequest.newBuilder(URI.create(base + "/api/styles/" + code + "/style.json")).GET().build(), HttpResponse.BodyHandlers.ofString());
                 assertEquals(200, response.statusCode(), response.body());
                 var full = json.readTree(response.body());
-                assertTrue(full.path("sources").has("mtr"));
-                assertTrue(full.path("sources").has("mtr-trains"));
+                assertTrue(full.path("sources").has("transit"));
+                assertTrue(full.path("sources").has("vehicles"));
                 assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
             }
         }

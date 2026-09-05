@@ -8,6 +8,7 @@ import org.springframework.core.io.ClassPathResource;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
+@org.springframework.scheduling.annotation.EnableScheduling
 public class ApplicationConfig {
     @Bean
     ServiceSettings serviceSettings(JsonMapper mapper) throws IOException {

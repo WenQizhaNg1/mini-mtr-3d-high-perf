@@ -1,0 +1,11 @@
+{
+  "name": "mini-mtr-data-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:osm": "node build-osm-mtr.mjs"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.1"
+  }
+}

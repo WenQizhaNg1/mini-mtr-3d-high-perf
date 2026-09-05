@@ -1,8 +1,16 @@
 // HTTP response contracts implemented by backend/.
-export type TrainState = 'running' | 'dwell';
+export type TrainState = 'running' | 'dwell' | 'unknown';
+export type MotionMode = 'simulation' | 'realtime';
+export interface Operator { code: string; name: string; timezone: string; mode: MotionMode; modes: MotionMode[] }
+export interface Arrival {
+    id: string; vehicleId?: string; lineId: string; stationId: string; destinationId?: string;
+    observedAt: string; eta: string; stale: boolean;
+}
 
 export interface TrainPosition {
-    estimate?: 'planned' | 'observed' | 'predicted' | 'stale' | 'conflict';
+    estimate?: 'simulated' | 'observed' | 'stale';
+    observedAt?: string;
+    validUntil?: string;
     motion?: Array<{ at: number; lng: number; lat: number; bearing: number }>;
     id: string;
     lineId: string;
@@ -16,39 +24,27 @@ export interface TrainPosition {
     nextStation: string | null;
     destinationStation: string;
     delaySeconds: number;
-    previousTime: string;
+    previousTime: string | null;
     nextTime: string | null;
 }
 
 export interface TrainSnapshot {
+    operator?: string;
+    mode?: MotionMode;
+    arrivals?: Arrival[];
+    status?: 'ok' | 'empty' | 'unavailable' | 'stale';
+    error?: string;
     timestamp: string;
     trains: TrainPosition[];
 }
 
-export interface RealtimeStatus {
-    enabled: true;
-    healthy: boolean | null;
-    lastPollAt: string | null;
-    lastError: string | null;
-    updatedTrains: number;
-}
-
-export interface LineIncident {
-    message: string;
-    url: string | null;
-    isDelay: boolean;
-    updatedAt: string;
-}
-
-export interface OperationsSnapshot {
-    realtime: RealtimeStatus | { enabled: false };
-    lines: Array<{
-        lineId: string;
-        incident: LineIncident | null;
-    }>;
-}
-
 export interface NetworkCatalog {
+    operator: string;
+    name: string;
+    timezone: string;
+    mode: MotionMode;
+    modes: MotionMode[];
+    bounds: number[];
     service: {
         serviceDayStart: string;
         serviceEndOffsetMinutes: number;

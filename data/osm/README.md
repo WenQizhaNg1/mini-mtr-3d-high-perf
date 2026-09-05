@@ -39,7 +39,8 @@ out meta;
 Run the checked-in normalizer after replacing or updating the source snapshot:
 
 ```shell
-npm run data:osm:build
+npm --prefix scripts ci
+npm --prefix scripts run build:osm
 ```
 
 The command reads `hk-mtr-2026-09-04.osm` and recreates `generated/`:
@@ -63,7 +64,7 @@ review and known normalization decisions.
 ## Database import and serving
 
 The old Node OSM importer has been removed after the Java backend migration.
-`npm run data:osm:build` still produces offline GeoJSON, but does not import it
+`npm --prefix scripts run build:osm` still produces offline GeoJSON, but does not import it
 into the database. A general GeoJSON import and feature editor is planned and
 has not been implemented yet.
 

@@ -36,26 +36,33 @@ public class StyleRepo {
                         r.get("position", Integer.class), r.get("minzoom", Double.class), r.get("maxzoom", Double.class),
                         json.readTree(r.get("layout", JSONB.class).data()), json.readTree(r.get("paint", JSONB.class).data()),
                         r.get("filter", JSONB.class) == null ? null : json.readTree(r.get("filter", JSONB.class).data()),
-                        r.get("enabled", Boolean.class)));
+                        r.get("enabled", Boolean.class),json.readTree(r.get("metadata",JSONB.class).data())));
     }
 
     public void save(String code, String name, String basemap, JsonNode layers) {
+        save(code,name,basemap,layers,json.createObjectNode());
+    }
+    public void save(String code,String name,String basemap,JsonNode layers,JsonNode metadata) {
         long id = db.fetchSingle("""
-                INSERT INTO app.style(code,name,basemap) VALUES(?,?,?)
-                ON CONFLICT(code) DO UPDATE SET name=excluded.name,basemap=excluded.basemap RETURNING id
-                """, code, name, basemap).get(0, Long.class);
+                INSERT INTO app.style(code,name,basemap,metadata) VALUES(?,?,?,?::jsonb)
+                ON CONFLICT(code) DO UPDATE SET name=excluded.name,basemap=excluded.basemap,metadata=excluded.metadata RETURNING id
+                """, code, name, basemap,metadata.toString()).get(0, Long.class);
         db.execute("DELETE FROM app.layer WHERE style_id=?", id);
         int position = 0;
         for (var layer : layers) {
             db.execute("""
-                    INSERT INTO app.layer(style_id,code,source,source_layer,type,position,minzoom,maxzoom,layout,paint,filter)
-                    VALUES(?,?,?,?,?,?,?,?,?::jsonb,?::jsonb,?::jsonb)
+                    INSERT INTO app.layer(style_id,code,source,source_layer,type,position,minzoom,maxzoom,layout,paint,filter,metadata)
+                    VALUES(?,?,?,?,?,?,?,?,?::jsonb,?::jsonb,?::jsonb,?::jsonb)
                     """, id, layer.path("id").asText(), layer.path("source").asText(),
                     layer.has("source-layer") ? layer.get("source-layer").asText() : null,
                     layer.path("type").asText(), position++, layer.path("minzoom").asDouble(0), layer.path("maxzoom").asDouble(24),
                     layer.has("layout") ? layer.get("layout").toString() : "{}",
                     layer.has("paint") ? layer.get("paint").toString() : "{}",
-                    layer.has("filter") ? layer.get("filter").toString() : null);
+                    layer.has("filter") ? layer.get("filter").toString() : null,
+                    layer.has("metadata") ? layer.get("metadata").toString() : "{}");
         }
+    }
+    public JsonNode metadata(String code) {
+        return json.readTree(db.fetchSingle("SELECT metadata FROM app.style WHERE code=?",code).get(0,JSONB.class).data());
     }
 }

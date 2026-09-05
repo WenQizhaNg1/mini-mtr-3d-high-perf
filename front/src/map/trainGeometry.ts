@@ -1,16 +1,16 @@
 import type { FeatureCollection, Polygon } from 'geojson';
 import type { TrainPosition } from '../api/types';
-import { routeWidthAtZoom, TRAIN_WIDTH_RATIO } from './dimensions.ts';
+import { trainWidthAtZoom, TRAIN_HEIGHT_OFFSETS } from './dimensions.ts';
 
 const EARTH_CIRCUMFERENCE = 40075016.68557849;
 type TrainProperties = Omit<TrainPosition, 'lng' | 'lat' | 'motion'> & { height: number };
 
-// Match the line layer's fractional-zoom scaling before converting to Mercator.
+// Convert the vehicle's independent display size to Mercator geometry.
 export function trainFeatures(positions: TrainPosition[], zoom: number): FeatureCollection<Polygon, TrainProperties> {
     const pixel = 1 / (512 * 2 ** zoom);
-    const width = routeWidthAtZoom(zoom) * TRAIN_WIDTH_RATIO;
+    const width = trainWidthAtZoom(zoom);
     const halfWidth = width / 2;
-    const halfLength = width * 1.3;
+    const halfLength = width * 1.1;
     return {
         type: 'FeatureCollection',
         features: positions.map(({ lng, lat, motion: _motion, ...properties }) => {
@@ -24,11 +24,12 @@ export function trainFeatures(positions: TrainPosition[], zoom: number): Feature
                 return [(x + dx) * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + dy)))) * 180 / Math.PI];
             });
             ring.push([...ring[0]]);
+            const height = width * 0.60 * pixel * EARTH_CIRCUMFERENCE * Math.cos(latitude);
             return {
                 type: 'Feature',
                 id: properties.id,
                 geometry: { type: 'Polygon', coordinates: [ring] },
-                properties: { ...properties, height: width * 0.45 * pixel * EARTH_CIRCUMFERENCE * Math.cos(latitude) },
+                properties: { ...properties, height: height * (1 + (TRAIN_HEIGHT_OFFSETS[properties.lineId] ?? 0)) },
             };
         }),
     };

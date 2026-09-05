@@ -24,8 +24,9 @@ public class StyleController {
     }
 
     @GetMapping("/api/styles/{code}/style.json")
-    public ResponseEntity<ObjectNode> map(@PathVariable String code) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(maps.load(code));
+    public ResponseEntity<ObjectNode> map(@PathVariable String code,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue="mtr") String operator) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(maps.load(code,operator));
     }
     @GetMapping("/api/map-sources")
     public ResponseEntity<ObjectNode> sources() {

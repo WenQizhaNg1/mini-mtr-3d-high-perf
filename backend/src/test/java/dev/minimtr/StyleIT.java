@@ -43,7 +43,9 @@ class StyleIT {
                 assertEquals(5, style.path("layers").size());
                 var routes = style.path("layers").path(1);
                 assertEquals("mtr-routes", routes.path("id").asText());
-                assertEquals("mtr_routes", routes.path("source-layer").asText());
+                assertEquals("routes", routes.path("source-layer").asText());
+                assertEquals("routes",routes.path("metadata").path("role").asText());
+                assertEquals("transit",style.path("metadata").path("group").asText());
                 assertTrue(routes.path("paint").path("line-width").isArray());
                 assertEquals("case", style.path("layers").path(3).path("paint").path("fill-extrusion-color").path(0).asText());
             }

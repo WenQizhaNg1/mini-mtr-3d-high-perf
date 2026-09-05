@@ -7,23 +7,38 @@ import { defaultLayer } from '../map/workbenchStyle';
 import PreviewMap from '../components/workbench/PreviewMap.vue';
 import LayerEditor from '../components/workbench/LayerEditor.vue';
 import ImportDialog from '../components/workbench/ImportDialog.vue';
+import GeometryEditor from '../components/workbench/GeometryEditor.vue';
+import TransitEditor from '../components/workbench/TransitEditor.vue';
+import type { Dataset } from '../api/datasets';
 import '../styles/workbench.css';
 
 const { token, styles, datasets, sources, basemaps, draft, selected, pendingEditor, busy, error, notice, dirty,
     composed, verifiedStyle, connect, load, create, save, run, refresh, updateLayer, move, publication } = useWorkbench();
 const enteredToken = ref('');
 const importing = ref(false);
+const importDataset = ref<Dataset>();
+const editing = ref(false), configuring = ref(false);
+const editDataset = ref<Dataset>();
 const importBusy = ref(false);
 onBeforeRouteLeave(() => !importBusy.value);
 const sample = ref<FeatureCollection>();
 const bounds = ref<number[]>();
 const mapError = ref('');
 const tab = ref<'layers' | 'datasets'>('layers');
-const sourceKey = ref('mtr');
-const sourceLayer = ref('mtr_routes');
+const sourceKey = ref('transit');
+const sourceLayer = ref('routes');
 const layerType = ref('line');
 const newLayerId = ref('');
 const selectedLayer = computed(() => draft.value?.layers[selected.value]);
+const groups = computed(() => {
+    const result = new Map<string,{index:number;layer:NonNullable<typeof draft.value>['layers'][number]}[]>();
+    draft.value?.layers.forEach((layer,index) => {
+        const group = (layer.metadata as {group?:string} | undefined)?.group || layer.id;
+        if (!result.has(group)) result.set(group,[]);
+        result.get(group)!.push({index,layer});
+    });
+    return [...result].map(([key,layers]) => ({key,name:key === 'transit' ? '交通网络 · 港铁 / 当前运营方' : key,layers}));
+});
 const previewStyle = computed(() => !dirty.value && verifiedStyle.value ? verifiedStyle.value : composed.value.style);
 const sourceLayers = computed(() => sources.value[sourceKey.value]?.layers || []);
 const geometry = computed(() => sourceLayers.value.find(l => l.id === sourceLayer.value)?.geometry.toUpperCase() || '');
@@ -34,6 +49,7 @@ watch(sourceKey, () => { sourceLayer.value = sourceLayers.value[0]?.id || ''; })
 watch(geometry, () => { layerType.value = layerTypes.value[0]; });
 watch(previewStyle, () => { mapError.value = ''; });
 function select(index: number) {
+    if (index === selected.value) return;
     if (pendingEditor.value && !window.confirm('放弃尚未应用的 JSON 修改？')) return;
     pendingEditor.value = false; selected.value = index;
 }
@@ -76,7 +92,7 @@ async function login() { await connect(enteredToken.value); enteredToken.value =
             </div>
             <span class="wb-save-status">{{ busy ? '处理中…' : dirty ? '有未保存的修改' : '已与服务器同步' }}</span>
             <button class="wb-primary" :disabled="busy || !token || !draft || pendingEditor || !!composed.errors.length || !dirty" @click="save">保存样式</button>
-            <RouterLink to="/">返回首页</RouterLink>
+            <button :disabled="!token || busy" @click="configuring = true">交通接入</button><RouterLink to="/">返回首页</RouterLink>
         </header>
         <div class="wb-access">
             <template v-if="!token"><span>只读预览 · 输入管理令牌以导入和保存</span><form @submit.prevent="login"><input v-model="enteredToken" aria-label="管理令牌" type="password" autocomplete="off" placeholder="WORKBENCH_TOKEN" :disabled="busy" /><button :disabled="busy || !enteredToken">连接</button></form></template>
@@ -89,8 +105,8 @@ async function login() { await connect(enteredToken.value); enteredToken.value =
                 <fieldset :disabled="busy">
                     <template v-if="tab === 'layers' && draft">
                         <section class="wb-section"><label>方案名称<input v-model="draft.name" aria-label="方案名称" /></label><small class="wb-muted">{{ draft.code }}</small><label>底图方案<select v-model="draft.basemap" aria-label="底图方案"><option value="positron">白天 · Positron</option><option value="osm-liberty-dark">夜晚 · OSM Liberty</option></select></label><small class="wb-muted">只选择现有底图，不编辑底图内容。</small></section>
-                        <div class="wb-section-heading"><h2>业务图层</h2><span>{{ draft.layers.length }}</span></div>
-                        <ol class="wb-layer-list"><li v-for="(layer, index) in draft.layers" :key="index" :class="{ selected: selected === index }"><button @click="select(index)"><span class="wb-layer-icon">{{ layer.type === 'line' ? '━' : layer.type === 'symbol' ? 'T' : '◉' }}</span><span><strong>{{ layer.id }}</strong><small>{{ layer.type }}{{ layer.layout?.visibility === 'none' ? ' · 隐藏' : '' }}</small></span></button></li></ol>
+                        <div class="wb-section-heading"><h2>业务图层</h2><span>{{ groups.length }}</span></div>
+                        <div v-for="group in groups" :key="group.key" class="wb-layer-group"><details open><summary>{{ group.name }} <small>{{ group.layers.length }} 个显示部分</small></summary><ol class="wb-layer-list"><li v-for="{layer,index} in group.layers" :key="index" :class="{ selected: selected === index }"><button @click="select(index)"><span class="wb-layer-icon">{{ layer.type === 'line' ? '━' : layer.type === 'symbol' ? 'T' : '◉' }}</span><span><strong>{{ layer.id }}</strong><small>{{ layer.type }}{{ layer.layout?.visibility === 'none' ? ' · 隐藏' : '' }}</small></span></button></li></ol></details></div>
                         <div class="wb-layer-actions"><button :disabled="selected <= 0 || pendingEditor" @click="move(-1)">上移</button><button :disabled="selected >= draft.layers.length - 1 || pendingEditor" @click="move(1)">下移</button><button :disabled="!selectedLayer || pendingEditor" @click="copyLayer">复制</button><button :disabled="!selectedLayer || pendingEditor" @click="removeLayer">删除</button></div>
                         <p class="wb-muted wb-section">列表从下层到上层排列。港铁路线仍位于底图建筑下方。</p>
                         <details class="wb-section"><summary>添加图层</summary><fieldset :disabled="pendingEditor || draft.layers.length >= 100">
@@ -101,8 +117,8 @@ async function login() { await connect(enteredToken.value); enteredToken.value =
                         </fieldset></details>
                     </template>
                     <template v-if="tab === 'datasets'">
-                        <div class="wb-section"><button class="wb-primary" :disabled="!token" @click="importing = true">导入数据</button><p class="wb-muted">WGS84 · GeoJSON / CSV / WKT</p></div>
-                        <article v-for="dataset in datasets" :key="dataset.code" class="wb-dataset"><div class="wb-row wb-between"><strong>{{ dataset.name }}</strong><span :class="dataset.published ? 'wb-badge' : 'wb-muted'">{{ dataset.published ? '已发布' : '草稿' }}</span></div><p class="wb-muted">{{ dataset.code }} · {{ dataset.ontology_code }}</p><div class="wb-row"><button :disabled="!token" @click="publication(dataset)">{{ dataset.published ? '取消发布' : '发布' }}</button><button v-if="dataset.published" @click="bounds = [...(sources['dataset:' + dataset.code]?.bounds || [])]">定位</button></div></article>
+                        <div class="wb-section"><button class="wb-primary" :disabled="!token" @click="importDataset = undefined; importing = true">导入数据</button><button :disabled="!token" @click="editDataset = undefined; editing = true">绘制数据</button><p class="wb-muted">WGS84 · GeoJSON / CSV / WKT</p></div>
+                        <article v-for="dataset in datasets" :key="dataset.code" class="wb-dataset"><div class="wb-row wb-between"><strong>{{ dataset.name }}</strong><span :class="dataset.published ? 'wb-badge' : 'wb-muted'">{{ dataset.published ? '已发布' : '草稿' }}</span></div><p class="wb-muted">{{ dataset.code }} · {{ dataset.ontology_code }}</p><div class="wb-row"><button :disabled="!token" @click="editDataset = dataset; editing = true">编辑要素</button><button :disabled="!token" @click="importDataset = dataset; importing = true">更新文件</button><button :disabled="!token" @click="publication(dataset)">{{ dataset.published ? '取消发布' : '发布' }}</button><button v-if="dataset.published" @click="bounds = [...(sources['dataset:' + dataset.code]?.bounds || [])]">定位</button></div></article>
                         <p v-if="!datasets.length" class="wb-section wb-muted">暂无数据集。内置港铁源仍可在图层中使用。</p>
                     </template>
                 </fieldset>
@@ -114,6 +130,8 @@ async function login() { await connect(enteredToken.value); enteredToken.value =
             </section>
             <aside class="wb-inspector"><fieldset :disabled="busy"><LayerEditor v-if="selectedLayer" :key="`${draft?.code}:${selected}`" :layer="selectedLayer" :sources="sources" @update="updateLayer" @pending="pendingEditor = $event" /><div v-else class="wb-section wb-muted">选择或添加图层以编辑样式。</div></fieldset></aside>
         </div>
-        <ImportDialog v-if="importing" :token="token" :basemap="basemaps[draft?.basemap || 'positron']" @close="importing = false; sample = undefined" @imported="imported" @preview="sample = $event" @busy="importBusy = $event" />
+        <GeometryEditor v-if="editing" :token="token" :dataset="editDataset" :basemap="basemaps[draft?.basemap || 'positron']" @close="editing = false" @saved="run(refresh)" />
+        <TransitEditor v-if="configuring" :token="token" :datasets="datasets" @close="configuring = false" @saved="run(refresh)" />
+        <ImportDialog v-if="importing" :dataset="importDataset" :token="token" :basemap="basemaps[draft?.basemap || 'positron']" @close="importing = false; sample = undefined" @imported="imported" @preview="sample = $event" @busy="importBusy = $event" />
     </main>
 </template>

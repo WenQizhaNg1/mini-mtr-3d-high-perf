@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
                 boolean write = !java.util.Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
                 if (write || path.startsWith("/api/admin/")) {
                     access.check(request.getHeader("Authorization"));
-                    if (write && request.getContentLengthLong() < 0)
+                    if (java.util.Set.of("POST","PUT","PATCH").contains(request.getMethod()) && request.getContentLengthLong() < 0)
                         throw new ResponseStatusException(HttpStatus.LENGTH_REQUIRED, "Content-Length is required");
                     if (write && request.getContentLengthLong() > 6 * 1024 * 1024)
                         throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "JSON body exceeds 6 MiB");

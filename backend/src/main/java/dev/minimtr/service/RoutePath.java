@@ -70,6 +70,31 @@ public final class RoutePath {
     public record Position(double lng, double lat, double bearing) {}
 
     public String fingerprint() { return fingerprint; }
+    public double lengthMeters() { return metres[metres.length - 1]; }
+
+    public record Projection(double fraction, double distanceMeters, double offsetMeters) {}
+
+    /** Return distinct nearby passes so loops and crossing paths do not silently pick the first occurrence. */
+    public java.util.List<Projection> project(double lng, double lat) {
+        var candidates = new java.util.ArrayList<Projection>();
+        double cos = Math.cos(Math.toRadians(lat));
+        for (int i = 1; i < coordinates.length; i++) {
+            var a = coordinates[i - 1]; var b = coordinates[i];
+            double dx = (b.x - a.x) * cos, dy = b.y - a.y;
+            double t = Math.clamp(((lng - a.x) * cos * dx + (lat - a.y) * dy) / (dx * dx + dy * dy), 0, 1);
+            double offset = 6371000 * Math.toRadians(Math.hypot((lng - a.x - t * (b.x - a.x)) * cos,
+                    lat - a.y - t * (b.y - a.y)));
+            double fraction = (units[i - 1] + t * (units[i] - units[i - 1])) / units[units.length - 1];
+            candidates.add(new Projection(fraction, metres[i - 1] + t * (metres[i] - metres[i - 1]), offset));
+        }
+        double best = candidates.stream().mapToDouble(Projection::offsetMeters).min().orElseThrow();
+        var result = new java.util.ArrayList<Projection>();
+        candidates.stream().filter(p -> p.offsetMeters() <= best + 1).sorted(java.util.Comparator.comparingDouble(Projection::offsetMeters))
+                .forEach(p -> {
+                    if (result.stream().noneMatch(q -> Math.abs(q.distanceMeters() - p.distanceMeters()) < 10)) result.add(p);
+                });
+        return java.util.List.copyOf(result);
+    }
 
     // Package-local read-only vertices, used to include bends in the short-term trajectory.
     double[] metricVertices() { return metres; }

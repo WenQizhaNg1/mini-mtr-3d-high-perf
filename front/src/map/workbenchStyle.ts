@@ -1,5 +1,6 @@
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import type { MapStyle, SourceCatalog } from '../api/styles';
+import { role } from './roles.ts';
 
 export function composeStyle(base: StyleSpecification, draft: MapStyle, catalog: SourceCatalog): StyleSpecification {
     const result: StyleSpecification = JSON.parse(JSON.stringify(base));
@@ -11,7 +12,7 @@ export function composeStyle(base: StyleSpecification, draft: MapStyle, catalog:
         const key = 'source' in layer && typeof layer.source === 'string' ? layer.source : '';
         if (!catalog[key]) throw new Error(`数据源未发布或不可用：${key}`);
         result.sources[key] = catalog[key].source;
-        if (layer.type === 'line' && key === 'mtr' && layer['source-layer'] === 'mtr_routes') routes.push(layer);
+        if (layer.type === 'line' && role(layer) === 'routes') routes.push(layer);
         else overlays.push(layer);
     }
     let building = result.layers.findIndex(layer => layer.type === 'fill-extrusion');
@@ -28,6 +29,7 @@ export function defaultLayer(id: string, source: string, sourceLayer: string, ty
         : type === 'fill' ? { 'fill-color': '#168b92', 'fill-opacity': 0.6 }
         : { 'text-color': '#243746', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 };
     return { id, type, source, ...(sourceLayer ? { 'source-layer': sourceLayer } : {}), paint,
+        ...(['transit','vehicles'].includes(source) ? {metadata:{group:'transit',role:source==='vehicles'?'vehicles':sourceLayer}} : {}),
         layout: type === 'symbol' ? { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans CJK SC Regular'], 'text-size': 14 } : {},
     } as LayerSpecification;
 }

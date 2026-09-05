@@ -6,6 +6,7 @@ export interface Ontology { code: string; name: string; geometry_types: string[]
 export interface ImportInput {
     code: string; name: string; ontology: string; format: 'geojson' | 'csv' | 'wkt'; content: string;
     geometryColumn?: string; longitudeColumn?: string; latitudeColumn?: string; mapping: Record<string, string>;
+    keyField?: string;
 }
 export interface Inspection { fields: string[]; samples: unknown[] }
 export interface ImportPreview { count: number; fields: Record<string, string>; geojson: FeatureCollection }

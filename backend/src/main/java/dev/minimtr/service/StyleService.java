@@ -33,10 +33,11 @@ public class StyleService {
                 if (!layer.enabled()) layout.put("visibility", "none");
                 node.set("layout", layout);
                 node.set("paint", layer.paint());
+                node.set("metadata",layer.metadata());
                 if (layer.filter() != null && !layer.filter().isNull()) node.set("filter", layer.filter());
                 return node;
             }).toList();
-            return new MapStyleVo(style.code(), style.name(), style.basemap(), layers);
+            return new MapStyleVo(style.code(), style.name(), style.basemap(), layers,repo.metadata(code));
         });
     }
 }

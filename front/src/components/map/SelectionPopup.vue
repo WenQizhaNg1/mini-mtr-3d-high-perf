@@ -8,7 +8,7 @@ const props = defineProps<{
     selectedStation?: NetworkCatalog['stations'][number]; point: { x: number; y: number } | null;
 }>();
 const emit = defineEmits<{ close: [] }>();
-const { text, name, formatTime } = useDisplay(() => props.language);
+const { text, name, formatTime } = useDisplay(() => props.language, () => props.network?.timezone || 'Asia/Hong_Kong');
 const line = (id: string) => props.network?.lines.find(item => item.id === id);
 const stationName = (code: string | null) => name(props.network?.stations.find(station => station.code === code), code || '—');
 const popupStyle = computed(() => ({
@@ -23,11 +23,13 @@ const popupStyle = computed(() => ({
         <div class="train-popup-body">
             <div class="train-popup-line">{{ name(line(selectedTrain.lineId), selectedTrain.lineId) }}</div>
             <div class="train-popup-dir">{{ text('往', 'to ') }}{{ stationName(selectedTrain.destinationStation) }}</div>
-            <div class="train-popup-stop">{{ selectedTrain.state === 'dwell' ? text('目前站', 'Current') : text('上一站', 'Prev') }}: {{ stationName(selectedTrain.previousStation) }} {{ formatTime(selectedTrain.previousTime).slice(0, 5) }}</div>
-            <div class="train-popup-stop">{{ text('下一站', 'Next') }}: {{ selectedTrain.nextStation ? stationName(selectedTrain.nextStation) : text('終點', 'Terminus') }} {{ selectedTrain.nextTime ? formatTime(selectedTrain.nextTime).slice(0, 5) : '' }}</div>
+            <template v-if="selectedTrain.state !== 'unknown'">
+                <div class="train-popup-stop">{{ selectedTrain.state === 'dwell' ? text('目前站', 'Current') : text('上一站', 'Prev') }}: {{ stationName(selectedTrain.previousStation) }} {{ formatTime(selectedTrain.previousTime).slice(0, 5) }}</div>
+                <div class="train-popup-stop">{{ text('下一站', 'Next') }}: {{ selectedTrain.nextStation ? stationName(selectedTrain.nextStation) : text('終點', 'Terminus') }} {{ selectedTrain.nextTime ? formatTime(selectedTrain.nextTime).slice(0, 5) : '' }}</div>
+            </template>
+            <div v-if="selectedTrain.observedAt">观测时间 {{ formatTime(selectedTrain.observedAt) }}</div>
             <details class="train-extra"><summary>{{ text('詳細資料', 'Details') }}</summary>
-                <div>{{ selectedTrain.state === 'dwell' ? text('停站中', 'At station') : text('行駛中', 'Running') }} · {{ Math.round(selectedTrain.delaySeconds) }} {{ text('秒偏移', 'seconds offset') }}</div>
-                <div v-if="selectedTrain.estimate">{{ text('位置推估', 'Position estimate') }} · {{ ({ planned: text('計劃推演', 'Planned'), observed: text('ETA 校準', 'ETA calibrated'), predicted: text('通過監測站後的行程預測', 'Trip forecast beyond monitor'), stale: text('觀測過期，已停止預測', 'Observation stale; prediction stopped'), conflict: text('ETA 衝突，未套用校正', 'ETA conflict; correction rejected') })[selectedTrain.estimate] }}</div>
+                <div v-if="selectedTrain.estimate">{{ text('位置依据', 'Position basis') }} · {{ ({ planned: '时刻表', simulated: '模拟计划', observed: '来源观测', predicted: '估算', stale: '观测已过期', conflict: '观测冲突' })[selectedTrain.estimate] }}</div>
                 <small>{{ selectedTrain.id }}</small>
             </details>
         </div>

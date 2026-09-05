@@ -3,6 +3,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Map, NavigationControl, setWorkerUrl, type StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { FeatureCollection, Geometry } from 'geojson';
+import { roleSource } from '../../map/roles';
 
 const props = defineProps<{ style?: StyleSpecification; sample?: FeatureCollection; bounds?: number[] }>();
 const emit = defineEmits<{ error: [message: string] }>();
@@ -15,7 +16,9 @@ setWorkerUrl(workerUrl);
 function draw() {
     if (!map || !props.style) return;
     const style: StyleSpecification = JSON.parse(JSON.stringify(props.style));
-    if (style.sources['mtr-trains']?.type === 'geojson') style.sources['mtr-trains'].data = {
+    const vehicles = roleSource(style, 'vehicles');
+    const source = vehicles ? style.sources[vehicles] : undefined;
+    if (source?.type === 'geojson') source.data = {
         type: 'FeatureCollection', features: [{ type: 'Feature', properties: { id: 'sample', colour: '#e84057', height: 18 },
             geometry: { type: 'Polygon', coordinates: [[[114.163, 22.312], [114.164, 22.312], [114.164, 22.3122], [114.163, 22.3122], [114.163, 22.312]]] } }],
     };

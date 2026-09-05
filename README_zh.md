@@ -1,32 +1,82 @@
-# Mini MTR
+# Mini MTR High Perf
 
-基于 Vue 3、MapLibre、Spring Boot 与 PostGIS 的港铁地图。原作来自 [7gugu](https://github.com/7gugu/mini-mtr-3d)，灵感来自 [Mini Tokyo 3D](https://minitokyo3d.com/)。
+面向复杂交通场景的地理可视化项目，以香港港铁为实践场景，探索轻量渲染、空间数据建模与可扩展的数据接入。
 
-- Martin 提供 OSM 底图及线路、站点矢量瓦片。
-- 后端计算列车位置，提供共享实时快照和无状态回放。
-- 香港时间轴支持日期跳转、拖动、暂停和 1–60 倍速。
-- 列车/站点详情、当前线路事件、天气、中英文界面与省电模式。
+基于 [7gugu/mini-mtr-3d](https://github.com/7gugu/mini-mtr-3d) 重构，灵感来自 [Mini Tokyo 3D](https://minitokyo3d.com/)。技术栈为 Vue 3、MapLibre、Spring Boot、PostGIS 与 Martin。
 
-列车位置由生成班次和实时到站修正估算，并非车载 GPS 定位。回放不包含历史天气和运营事件归档。
+[English](./README.md)
 
-## 开发
+![Mini MTR High Perf 项目预览](https://picui.ogmua.cn/s1/2026/09/05/6a9c2e09d0e5f.webp)
 
-使用 Node 24、Java 25 和 Maven：
+![Mini MTR High Perf 项目预览（二）](https://picui.ogmua.cn/s1/2026/09/05/6a9c2e09dc919.webp)
+
+## 设计与优化
+
+### 2.5D 轻量渲染
+
+使用 MapLibre 原生多边形挤出实现车辆与建筑的立体表达，移除独立的 Three.js 场景与地图坐标同步链路，降低渲染架构复杂度。通过倾斜视角、雾效和日夜样式保留空间层次。
+
+车辆几何按需更新，常规模式将更新频率限制为每秒 30 次，省电模式降至每秒 1 次；页面隐藏时暂停车辆几何更新，减少持续计算与数据提交。
+
+### 静态矢量瓦片与动静分离
+
+底图、轨道和站点采用矢量瓦片，按视口与缩放层级加载。PostGIS 保存完整空间数据，Martin 提供瓦片服务，减少前端全量加载和处理静态几何的成本。
+
+动态车辆通过独立 GeoJSON 来源更新。后端计算运动帧，前端进行展示插值，使静态地图与高频车辆更新各自运行。
+
+### 空间数据本体建模
+
+以空间对象为基础，将几何、要素类别、业务关系和显示样式分离。线路、站点、有向路径与班次通过明确关系组织，数据集字段映射将通用地理要素接入交通业务。
+
+这一设计为几何复用、业务扩展与统一维护提供基础。地图展示与运行计算共用空间数据，样式通过原生图层配置管理。
+
+### 轨道数据交换标准化 · 进行中
+
+已建立空间数据导入、业务字段映射、Adapter 接入与统一运动帧的基础链路。模拟模式根据时刻表和沿线里程计算位置；实时模式独立消费 GPS、沿线里程或站点 ETA。
+
+轨道数据的导入、导出与跨系统交换规范仍在完善，尚未形成完整的标准化闭环。当前港铁实时源仅提供 ETA，因此实时模式展示到站预测。
+
+## 当前能力
+
+- 港铁示例覆盖 10 条线路、98 个站点与 24 个有向运行方案。
+- 支持运营方切换、模拟回放、时间轴控制、车辆跟随和日夜样式。
+- 工作台支持文件导入、点线绘制、几何与属性编辑、业务字段映射和时刻表配置。
+- 后端统一管理空间数据、业务关系与图层样式，数据修改后重算并通知前端刷新。
+
+## Roadmap
+
+项目愿景是持续演进为可支撑高复杂度场景的地理可视化基础设施，覆盖数据接入、编辑维护、运行计算与交互展示。
+
+| 方向 | 后续工作 |
+| --- | --- |
+| 前端编辑体验 | 完善几何编辑、字段映射、停站编排与校验反馈，降低复杂数据的配置成本 |
+| 身份认证与权限管理 | 从管理令牌扩展为完整的登录、身份认证与操作授权界面 |
+| 数据交换标准 | 完善轨道、站点与时刻表的导入导出约定，验证跨来源数据与 Adapter 的复用 |
+| 数据维护流程 | 持续完善数据校验、关联更新与异常定位，形成可靠的日常维护流程 |
+| 天气图层 | 接入空间气象数据，实现降水、风场等天气要素的地图叠加与时序展示 |
+| 实时事件 | 接入运营异常、服务调整等事件，支持空间定位、状态更新与关联线路展示 |
+| 复杂场景承载 | 建立可复现的性能基准，持续验证更大数据规模、更多动态要素与多业务图层下的表现 |
+
+## 本地开发
+
+前端使用 Node 24，后端使用 Java 25 和 Maven。按[后端说明](./backend/README.md)配置根目录 `.env`。
+
+在仓库根目录安装前端依赖并启动数据库、后端：
 
 ```sh
-npm ci
-npm run front:install
+npm --prefix front ci
 docker compose up -d postgres
-npm run server
-# Java 完成 Flyway 迁移后，在另一个终端执行：
-docker compose up -d martin
-npm start
-npm run build
-npm test
+mvn -f backend/pom.xml spring-boot:run
 ```
 
-按[Java 后端说明](./backend/README.md)配置根目录 .env 的 PostgreSQL 参数。前端地址为 http://127.0.0.1:8080，Java API 为 http://127.0.0.1:3002。服务地址变化时，将 front/.env.example 复制为 front/.env 并调整。构建产物为 front/dist，托管时需在构建阶段配置浏览器可访问的 Martin/API 地址。旧 Node 后端已删除；npm test 运行前端与 Java 单元测试，数据库集成验证命令见后端说明。
+后端完成数据库初始化后，在另一个终端启动瓦片服务、导入港铁示例并启动前端：
 
-[架构](./docs/architecture.md) · [迁移计划](./docs/server-refactor-plan.md) · [前端功能与验证](./docs/frontend-migration.md)
+```sh
+docker compose up -d martin
+node --env-file=.env scripts/import-mtr.mjs
+npm --prefix front run dev
+```
 
-旧 AMap/Three.js 前端及构建链路已移除，原代码可从 Git 历史查看。编辑器留待独立管理功能设计，地图和列车样式后续统一调整。
+前端默认地址为 http://127.0.0.1:8080，后端为 http://127.0.0.1:3002。前端构建使用 `npm --prefix front run build`，后端打包使用 `mvn -f backend/pom.xml package`。
+
+[架构说明](./docs/architecture.md) · [数据库设计](./docs/database-design.md) · [港铁导入示例](./docs/mtr-import-example.md) · [前端工作台](./front/README.md)
