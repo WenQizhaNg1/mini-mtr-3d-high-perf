@@ -23,6 +23,37 @@ public class DatasetParser {
     private final JsonMapper json;
     public DatasetParser(JsonMapper json) { this.json = json; }
 
+    public Map<String, Object> inspect(DatasetImport input) {
+        require(input.content() != null && input.format() != null, "format and content are required");
+        require(input.content().getBytes(StandardCharsets.UTF_8).length <= 5 * 1024 * 1024, "Import exceeds 5 MiB");
+        try {
+            if (input.format().equals("csv")) {
+                try (var csv = CSVFormat.RFC4180.builder().setHeader().setSkipHeaderRecord(true).get()
+                        .parse(new StringReader(input.content().replaceFirst("^\\uFEFF", "")))) {
+                    var headers = csv.getHeaderNames();
+                    require(new HashSet<>(headers).size() == headers.size() && headers.stream().noneMatch(String::isBlank), "CSV headers must be unique and nonempty");
+                    var samples = new ArrayList<Map<String,String>>();
+                    for (var row : csv) { samples.add(row.toMap()); if (samples.size() == 5) break; }
+                    return Map.of("fields", headers, "samples", samples);
+                }
+            }
+            if (input.format().equals("geojson")) {
+                var root = json.readTree(input.content());
+                require(root != null && root.path("features").isArray(), "Expected a GeoJSON FeatureCollection");
+                var fields = new LinkedHashSet<String>();
+                var samples = new ArrayList<JsonNode>();
+                for (var feature : root.path("features")) {
+                    feature.path("properties").properties().forEach(entry -> fields.add(entry.getKey()));
+                    if (samples.size() < 5) samples.add(feature.path("properties"));
+                }
+                return Map.of("fields", fields, "samples", samples);
+            }
+            require(input.format().equals("wkt"), "format must be geojson, csv or wkt");
+            return Map.of("fields", List.of(), "samples", input.content().lines().limit(5).toList());
+        } catch (ResponseStatusException e) { throw e; }
+        catch (Exception e) { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot inspect file: " + e.getMessage(), e); }
+    }
+
     public ParsedDataset parse(DatasetImport input) {
         require(input != null && input.content() != null && input.format() != null, "format and content are required");
         require(input.content().getBytes(StandardCharsets.UTF_8).length <= 5 * 1024 * 1024, "Import exceeds 5 MiB");

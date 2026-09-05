@@ -40,6 +40,9 @@ class DatasetIT {
         assertEquals(0, tile("integration-stations").length);
         assertThrows(ResponseStatusException.class, () -> datasets.find("integration-stations", false));
         datasets.publish("integration-stations", true);
+        var catalog = maps.catalog().path("dataset:integration-stations");
+        assertEquals(4, catalog.path("bounds").size());
+        assertEquals("string", catalog.path("layers").path(0).path("fields").path("name").asText());
         assertTrue(tile("integration-stations").length > 0);
         assertEquals(0, tile("another-dataset").length);
         assertEquals(0, db.fetchSingle("SELECT app.dataset_tile(30,0,0,'{}')").get(0, byte[].class).length);
@@ -70,6 +73,7 @@ class DatasetIT {
     }
 
     @Test void protectsWritesAndServesCompleteExistingStyles() throws Exception {
+        assertEquals(maps.basemap("osm-liberty-dark").get("light"), maps.load("mtr-dark").get("light"));
         try (var client = HttpClient.newHttpClient()) {
             String base = "http://127.0.0.1:" + port;
             var preview = HttpRequest.newBuilder(URI.create(base + "/api/datasets/preview"))
@@ -86,6 +90,15 @@ class DatasetIT {
             var valid = client.send(preview.header("Authorization", "Bearer integration-only").build(), HttpResponse.BodyHandlers.ofString());
             assertEquals(200, valid.statusCode(), valid.body());
             assertEquals(1, json.readTree(valid.body()).path("count").asInt());
+            assertEquals("FeatureCollection", json.readTree(valid.body()).path("geojson").path("type").asText());
+            var inspection = client.send(HttpRequest.newBuilder(URI.create(base + "/api/datasets/inspect"))
+                    .header("Content-Type", "application/json").header("Authorization", "Bearer integration-only")
+                    .POST(HttpRequest.BodyPublishers.ofString("{\"format\":\"csv\",\"content\":\"wkt,name\\nPOINT (114 22),Test\"}")).build(), HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, inspection.statusCode(), inspection.body());
+            assertEquals("wkt", json.readTree(inspection.body()).path("fields").path(0).asText());
+            var catalog = client.send(HttpRequest.newBuilder(URI.create(base + "/api/map-sources")).GET().build(), HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, catalog.statusCode(), catalog.body());
+            assertTrue(json.readTree(catalog.body()).has("mtr"));
             for (String code : new String[]{"mtr-light", "mtr-dark"}) {
                 var response = client.send(HttpRequest.newBuilder(URI.create(base + "/api/styles/" + code + "/style.json")).GET().build(), HttpResponse.BodyHandlers.ofString());
                 assertEquals(200, response.statusCode(), response.body());

@@ -15,9 +15,13 @@ import static dev.minimtr.service.DatasetParser.require;
 public class DatasetService {
     private final DatasetRepo repo;
     private final DatasetParser parser;
-    public DatasetService(DatasetRepo repo, DatasetParser parser) { this.repo = repo; this.parser = parser; }
+    private final tools.jackson.databind.json.JsonMapper json;
+    public DatasetService(DatasetRepo repo, DatasetParser parser, tools.jackson.databind.json.JsonMapper json) {
+        this.repo = repo; this.parser = parser; this.json = json;
+    }
     public List<JsonNode> list(boolean drafts) { return repo.list(drafts); }
     public List<JsonNode> ontology() { return repo.ontology(); }
+    public Map<String, Object> inspect(DatasetImport input) { return parser.inspect(input); }
     public JsonNode find(String code, boolean drafts) {
         var dataset = repo.find(code, drafts);
         if (dataset == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dataset not found");
@@ -25,8 +29,18 @@ public class DatasetService {
     }
     public Map<String, Object> preview(DatasetImport input) {
         var parsed = validate(input);
+        var features = new ArrayList<Map<String,Object>>();
+        try {
+            var reader = new org.locationtech.jts.io.WKTReader();
+            var writer = new org.locationtech.jts.io.geojson.GeoJsonWriter();
+            writer.setEncodeCRS(false);
+            for (var feature : parsed.features().stream().limit(10).toList())
+                features.add(Map.of("type", "Feature", "geometry", json.readTree(writer.write(reader.read(feature.wkt()))),
+                        "properties", feature.properties()));
+        } catch (org.locationtech.jts.io.ParseException e) { throw new IllegalStateException("Validated geometry cannot be read", e); }
         return Map.of("count", parsed.features().size(), "fields", parsed.fields(),
-                "samples", parsed.features().stream().limit(10).toList());
+                "samples", parsed.features().stream().limit(10).toList(),
+                "geojson", Map.of("type", "FeatureCollection", "features", features));
     }
     @Transactional
     public JsonNode create(DatasetImport input) {

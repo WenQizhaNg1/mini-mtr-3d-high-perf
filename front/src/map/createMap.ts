@@ -1,4 +1,4 @@
-import { addMtrLayers, TRAIN_SOURCE_ID } from './layers';
+import { TRAIN_SOURCE_ID } from './layers';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {
     GeoJSONSource,
@@ -10,14 +10,13 @@ import {
 } from 'maplibre-gl';
 import type { LngLatBoundsLike } from 'maplibre-gl';
 import type { TrainPosition, TrainSnapshot } from '../api/types';
-import type { MapStyle } from '../api/styles';
+import type { StyleSpecification } from 'maplibre-gl';
 import { trainFeatures } from './trainGeometry';
 import { mergeMotion, sampleMotion } from './trainMotion';
 
 // MapLibre 6 ships a separate module worker; let Vite resolve and bundle it.
 setWorkerUrl(workerUrl);
 
-const MARTIN_URL = (import.meta.env.VITE_MARTIN_URL || 'http://127.0.0.1:8081').replace(/\/$/, '');
 const TRAIN_TRANSITION_MS = 1000;
 const NETWORK_BOUNDS: LngLatBoundsLike = [
     [113.91, 22.21],
@@ -111,11 +110,10 @@ function createTrainRenderer(map: MapLibreMap) {
     };
 }
 
-export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, style: MapStyle): MtrMap {
-    if (!['positron', 'osm-liberty-dark'].includes(style.basemap)) throw new Error(`Unknown basemap: ${style.basemap}`);
+export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, style: StyleSpecification): MtrMap {
     const map = new MapLibreMap({
         container,
-        style: `${MARTIN_URL}/style/${style.basemap}`,
+        style,
         center: [114.11, 22.36],
         zoom: 10.3,
         pitch: 42,
@@ -146,10 +144,6 @@ export function createMtrMap(container: HTMLElement, callbacks: MapCallbacks, st
     map.addControl(new ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
 
     map.on('load', () => {
-        try { addMtrLayers(map, style.layers, MARTIN_URL); }
-        catch (cause) { callbacks.onError(`Map layers: ${String(cause)}`); return; }
-        if (style.basemap === 'osm-liberty-dark')
-            map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.4, position: [1.5, 210, 40] });
         updateLanguage();
         updateSelection();
         if (!window.location.hash) {

@@ -25,6 +25,8 @@ public class DatasetController {
     }
     @PostMapping("/api/datasets/preview")
     public ResponseEntity<Map<String, Object>> preview(@RequestBody DatasetImport input) { return response(datasets.preview(input)); }
+    @PostMapping("/api/datasets/inspect")
+    public ResponseEntity<Map<String, Object>> inspect(@RequestBody DatasetImport input) { return response(datasets.inspect(input)); }
     @PostMapping("/api/datasets")
     public ResponseEntity<JsonNode> create(@RequestBody DatasetImport input) { return ResponseEntity.status(201).cacheControl(CacheControl.noStore()).body(datasets.create(input)); }
     public record Publication(Boolean published) {}

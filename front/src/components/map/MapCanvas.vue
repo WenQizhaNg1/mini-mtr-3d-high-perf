@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { createMtrMap, type MtrMap, type MapSelection } from '../../map/createMap';
 import type { TrainSnapshot } from '../../api/types';
-import { getMapStyle } from '../../api/styles';
+import { getFullStyle } from '../../api/styles';
 
 const props = defineProps<{
     language: 'en' | 'zh'; powerSave: boolean; selection: MapSelection;
@@ -32,7 +32,7 @@ watch(() => props.frame, value => { if (value) map?.setSnapshot(value.snapshot, 
 onMounted(async () => {
     try {
         const code = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'mtr-dark' : 'mtr-light';
-        const style = await getMapStyle(code, lifetime.signal);
+        const style = await getFullStyle(code, lifetime.signal);
         if (lifetime.signal.aborted) return;
         map = createMtrMap(container.value!, {
             onSelect: value => emit('select', value),

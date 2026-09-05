@@ -48,6 +48,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', escape));
 
 <template>
     <main class="map-shell">
+        <RouterLink class="workbench-link" to="/workbench">图层工作台</RouterLink>
         <MapCanvas :language="language" :power-save="powerSave" :selection="selection" :frame="frame"
             @select="selection = $event" @point="selectionPoint = $event" @error="mapError = $event" />
         <StatusPanel :language="language" :live="live" :connected="connected" :at="at"
@@ -63,3 +64,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', escape));
         <AboutDialog v-if="about" :language="language" @close="about = false" />
     </main>
 </template>
+
+<style scoped>
+.workbench-link { position: absolute; z-index: 5; right: 52px; top: 12px; padding: 8px 12px; border-radius: 6px; background: #fff; color: #18334b; font: 13px var(--font-heiti); text-decoration: none; }
+</style>

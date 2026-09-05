@@ -71,9 +71,7 @@ public class MapStyleService {
         if (!inserted) layers.addAll(routeLayers);
         layers.addAll(overlayLayers);
         output.set("layers", layers);
-        if (style.basemap().equals("osm-liberty-dark"))
-            output.set("light", json.readTree("{\"anchor\":\"viewport\",\"color\":\"#ffffff\",\"intensity\":0.4,\"position\":[1.5,210,40]}"));
-        output.set("state", json.readTree("{\"language\":\"zh\"}"));
+        output.set("state", json.readTree("{\"language\":{\"default\":\"zh\"}}"));
         return output;
     }
 
@@ -102,11 +100,11 @@ public class MapStyleService {
                 require(layer.path("source-layer").asText().equals("features"), "Dataset source-layer must be features");
                 var geometries = datasets.geometryTypes(source.substring(8));
                 if (type.equals("fill") || type.equals("fill-extrusion"))
-                    require(geometries.stream().allMatch(g -> g.contains("POLYGON")), "Fill layers require polygon data");
+                    require(geometries.stream().anyMatch(g -> g.contains("POLYGON")), "Fill layers require polygon data");
                 if (type.equals("circle") || type.equals("heatmap"))
-                    require(geometries.stream().allMatch(g -> g.contains("POINT")), "Point layers require point data");
+                    require(geometries.stream().anyMatch(g -> g.contains("POINT")), "Point layers require point data");
                 if (type.equals("line"))
-                    require(geometries.stream().allMatch(g -> g.contains("LINESTRING") || g.contains("POLYGON")), "Line layers require line or polygon data");
+                    require(geometries.stream().anyMatch(g -> g.contains("LINESTRING") || g.contains("POLYGON")), "Line layers require line or polygon data");
             } else require(!layer.has("source-layer"), "GeoJSON source cannot have source-layer");
             double min = zoom(layer, "minzoom", 0), max = zoom(layer, "maxzoom", 24);
             require(min >= 0 && max <= 24 && min < max, "Invalid zoom range");
@@ -142,7 +140,7 @@ public class MapStyleService {
         return source;
     }
 
-    private ObjectNode basemap(String code) {
+    public ObjectNode basemap(String code) {
         require(BASEMAPS.contains(code), "Unknown basemap");
         try {
             var base = (ObjectNode) json.readTree(Files.readString(directory.resolve("style").resolve(code).resolve("style.json")));
@@ -156,8 +154,34 @@ public class MapStyleService {
                     source.set("tiles", tiles);
                 }
             }
+            if (code.equals("osm-liberty-dark"))
+                base.set("light", json.readTree("{\"anchor\":\"viewport\",\"color\":\"#ffffff\",\"intensity\":0.4,\"position\":[1.5,210,40]}"));
             return base;
         } catch (IOException e) { throw new IllegalStateException("Cannot read configured basemap: " + code, e); }
     }
     private String absolute(String value) { return value.startsWith("/") ? martin + value : value; }
+
+    public ObjectNode catalog() {
+        var result = json.createObjectNode();
+        var mtr = result.putObject("mtr");
+        mtr.put("name", "港铁").set("source", source("mtr"));
+        mtr.set("layers", json.readTree("""
+                [{"id":"mtr_routes","geometry":"LineString","fields":{"line_id":"string","colour":"string","id":"string"}},
+                 {"id":"mtr_stations","geometry":"Point","fields":{"code":"string","name_zh":"string","name_en":"string","interchange":"boolean"}}]
+                """));
+        var trains = result.putObject("mtr-trains");
+        trains.put("name", "实时列车（工作台使用示意要素）").set("source", source("mtr-trains"));
+        trains.set("layers", json.readTree("[{\"id\":\"\",\"geometry\":\"Polygon\",\"fields\":{\"colour\":\"string\",\"height\":\"number\"}}]"));
+        for (var dataset : datasets.list(false)) {
+            String code = dataset.path("code").asText();
+            var entry = result.putObject("dataset:" + code);
+            entry.put("name", dataset.path("name").asText()).set("source", source("dataset:" + code));
+            entry.set("bounds", json.valueToTree(datasets.bounds(code)));
+            var layer = entry.putArray("layers").addObject();
+            layer.put("id", "features");
+            layer.put("geometry", String.join(",", datasets.geometryTypes(code)));
+            layer.set("fields", dataset.path("fields"));
+        }
+        return result;
+    }
 }

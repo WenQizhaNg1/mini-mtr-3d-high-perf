@@ -27,6 +27,14 @@ public class StyleController {
     public ResponseEntity<ObjectNode> map(@PathVariable String code) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(maps.load(code));
     }
+    @GetMapping("/api/map-sources")
+    public ResponseEntity<ObjectNode> sources() {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(maps.catalog());
+    }
+    @GetMapping("/api/basemaps/{code}/style.json")
+    public ResponseEntity<ObjectNode> basemap(@PathVariable String code) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(maps.basemap(code));
+    }
 
     @PutMapping("/api/styles/{code}")
     public ResponseEntity<Void> save(@PathVariable String code, @RequestBody ObjectNode input) {

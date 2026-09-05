@@ -80,9 +80,9 @@ java -jar backend/target/backend-0.1.0-SNAPSHOT.jar --spring.main.web-applicatio
 - `GET /api/styles`：数据库样式方案列表（code/name/basemap）。
 - `GET /api/styles/{code}`：方案及按 position 排序的 MapLibre 原生业务图层；不存在返回 404，不使用硬编码回退。读取不缓存，刷新首页会重新查询。
 
-V6 将日间 `mtr-light` 和夜间 `mtr-dark` 的各 5 个业务图层初始化到 `app.style` / `app.layer`。响应将 source_layer 映射为 `source-layer`，enabled=false 映射为 layout.visibility=none，保留 paint/layout/filter 的原生 JSON 类型。底图仍由 basemap 引用 Martin 的现有样式文件，未开放底图编辑或样式写接口。
+V6 将日间 `mtr-light` 和夜间 `mtr-dark` 的各 5 个业务图层初始化到 `app.style` / `app.layer`。响应将 source_layer 映射为 `source-layer`，enabled=false 映射为 layout.visibility=none，保留 paint/layout/filter 的原生 JSON 类型。底图仍由 basemap 引用受控样式文件，不开放底图编辑。业务样式写接口见下文。
 
-首页按系统明暗偏好读取对应方案。数据源由前端注册；线路线层位于底图第一个建筑挤出层之前，其余业务层位于底图之上，各组内沿用数据库顺序。语言通过 global-state.language 传入表达式，车辆选中通过 feature-state.selected 表达式显示，不覆盖已保存的基础样式。车辆宽长仍由前端几何参数生成，修改数据库 line-width 不会同步改变车辆尺寸。
+首页按系统明暗偏好读取完整 style.json，数据源由后端声明；线路线层位于底图第一个建筑挤出层之前，其余业务层位于底图之上，各组内沿用数据库顺序。语言通过 global-state.language 传入表达式，车辆选中通过 feature-state.selected 表达式显示，不覆盖已保存的基础样式。车辆宽长仍由前端几何参数生成，修改数据库 line-width 不会同步改变车辆尺寸。
 
 当前 API 保持 MTR 兼容范围，尚未开放多运营方查询。计划回放不混入实时延误，`delaySeconds` 为 0。实时结果带 `estimate`（planned / observed / predicted / stale / conflict）和 `motion`；它是基于到站信息的推演，并非列车 GPS 定位。前端响应类型定义在 `front/src/api/types.ts`，不再引用旧 Node 源码；公开只读 API 支持跨域 GET（不携带凭据），后续编辑接口需要独立的授权与跨域策略。
 
@@ -131,7 +131,7 @@ OUTBOUND_PROXY_URL=http://127.0.0.1:1083
 - `PUT /api/styles/{code}`：保存业务样式，保留原生 paint/layout/filter。
 - `GET /api/styles/{code}/style.json`：完整 MapLibre 样式，含 sources、layers、字体和精灵资源。
 
-`MARTIN_PUBLIC_URL` 默认 http://127.0.0.1:8081，必须能从浏览器访问。受控底图模板默认读取仓库 map/；独立运行 jar 时建议明确设置 `MAP_DIRECTORY`。现有首页仍读旧样式接口；自定义数据源在下一轮前端迁移后接入首页。
+`MARTIN_PUBLIC_URL` 默认 http://127.0.0.1:8081，必须能从浏览器访问。受控底图模板默认读取仓库 map/；独立运行 jar 时建议明确设置 `MAP_DIRECTORY`。首页已读完整样式；工作台 `/workbench` 支持数据导入和业务图层编辑，见 [前端说明](../front/README.md)。新增 `/api/datasets/inspect` 检查文件字段、`/api/map-sources` 提供源与字段目录、`/api/basemaps/{code}/style.json` 提供预览模板。
 
 ## 验证命令
 

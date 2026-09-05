@@ -13,6 +13,8 @@ Java 管理导入、语义校验、发布和样式；PostGIS 保存几何并生�
 
 ## 导入接口（管理令牌保护）
 
+`POST /api/datasets/inspect` 只需 format/content，返回原始字段和最多 5 条样例，不替代确认前的完整校验。preview 响应额外提供标准 GeoJSON FeatureCollection，供浏览器直接显示样例。
+
 `POST /api/datasets/preview` 和 `POST /api/datasets` 使用相同 JSON：
 
 ```json
@@ -58,9 +60,9 @@ api 放 DatasetController/StyleController；service 放解析、发布与样式�
 
 ## 验证
 
-解析单元测试覆盖 GeoJSON/CSV/WKT、映射与错误；数据库集成测试验证事务、隔离数据集、发布状态和 MVT；HTTP 测试覆盖令牌和 style.json；对本机 Martin 执行真实参数化瓦片请求。现有首页和 API 保持兼容，本轮不做工作台 UI。
+解析单元测试覆盖 GeoJSON/CSV/WKT、映射与错误；数据库集成测试验证事务、隔离数据集、发布状态和 MVT；HTTP 测试覆盖令牌和 style.json；对本机 Martin 执行真实参数化瓦片请求。
 
-现有首页仍使用旧的 layers 接口和固定源，不会自动显示工作台新增数据集；下一轮将首页切换至完整 style.json 后再将自定义源加入首页样式。本轮可新建独立样式供 MapLibre 预览。
+首页已切换完整 style.json；工作台位于 `/workbench`。`GET /api/map-sources` 返回已注册源定义、源内图层、字段及通用数据集范围；`GET /api/basemaps/{code}/style.json` 返回受控底图模板。工作台组合草稿即时预览，保存后重新加载服务端结果。同一数据集可混合本体支持的几何类型，点/面等样式适用于其中相应几何。
 
 ## 本轮验证结果
 

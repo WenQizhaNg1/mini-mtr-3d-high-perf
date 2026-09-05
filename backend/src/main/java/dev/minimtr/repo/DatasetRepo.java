@@ -46,4 +46,14 @@ public class DatasetRepo {
     public void publish(String code, boolean published) {
         db.execute("UPDATE app.dataset SET published=? WHERE code=?", published, code);
     }
+    public List<Double> bounds(String code) {
+        var row = db.fetchSingle("""
+                SELECT ST_XMin(extent), ST_YMin(extent), ST_XMax(extent), ST_YMax(extent) FROM (
+                    SELECT ST_Extent(o.geom) AS extent FROM app.dataset d
+                    JOIN app.feature f ON f.dataset_id=d.id JOIN app.spatial_object o ON o.id=f.object_id WHERE d.code=?
+                ) b
+                """, code);
+        if (row.get(0) == null) return List.of();
+        return List.of(row.get(0,Double.class), row.get(1,Double.class), row.get(2,Double.class), row.get(3,Double.class));
+    }
 }
